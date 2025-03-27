@@ -1,0 +1,82 @@
+[versions]
+agp = "8.5.2"
+kotlin = "1.9.0"
+coreKtx = "1.15.0"
+junit = "4.13.2"
+junitVersion = "1.2.1"
+espressoCore = "3.6.1"
+appcompat = "1.7.0"
+material = "1.12.0"
+activity = "1.10.0"
+constraintlayout = "2.1.3"
+lifecycle-runtime = "2.4.1"
+mlkit-text-recognition = "16.0.0-beta4"
+camerax-core = "1.3.0"
+camerax-lifecycle = "1.3.0"
+camerax-view = "1.3.0"
+camerax-camera2 = "1.3.0"
+glide = "4.16.0"
+mlkit-image-labeling = "17.0.1"
+coroutines= "1.6.4"
+transformers = "4.34.0"
+okhttp = "4.9.3"
+activityCompose = "1.8.0"
+composeBom = "2023.10.01"
+compose = "1.5.4"
+opencv = "4.5.5-android"
+mlkit-language = "17.0.0"
+mlkit-extraction = "16.0.0-beta1"
+cloud = "3.10.1"
+tess-two = "9.1.0"
+mlkit-barcode= "17.0.0"
+guava = "32.0.1-jre"
+preferenceKtx = "1.2.1"
+
+[libraries]
+ttvocr = { module = "libs:ttvocr" }
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
+androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
+lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycle-runtime" }
+mlkit-text-recognition = { module = "com.google.mlkit:text-recognition", version.ref = "mlkit-text-recognition" }
+mlkit-image-labeling = { module = "com.google.mlkit:image-labeling", version.ref = "mlkit-image-labeling" }
+mlkit-language = { module = "com.google.mlkit:language-id", version.ref = "mlkit-language" }
+mlkit-extraction = { module = "com.google.mlkit:entity-extraction", version.ref = "mlkit-extraction" }
+mlkit-barcode = { module = "com.google.mlkit:barcode-scanning", version.ref = "mlkit-barcode" }
+mlkit-detection = { module = "com.google.mlkit:object-detection", version.ref = "mlkit-barcode" }
+mlkit-detection-custom = { module = "com.google.mlkit:object-detection-custom", version.ref = "mlkit-barcode" }
+camerax-core = { module = "androidx.camera:camera-core", version.ref = "camerax-core" }
+camerax-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "camerax-lifecycle" }
+camerax-view = { module = "androidx.camera:camera-view", version.ref = "camerax-view" }
+camerax-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "camerax-camera2" }
+glide = { module = "com.github.bumptech.glide:glide", version.ref = "glide" }
+glide-compiler = { module = "com.github.bumptech.glide:compiler", version.ref = "glide" }
+coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines"}
+transformers = { module = "com.huggingface:transformers", version.ref = "transformers"}
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+cloud = { module = "com.google.cloud:google-cloud-vision", version.ref = "cloud"}
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidx-ui = { group = "androidx.compose.ui", name = "ui", version.ref="compose" }
+androidx-compose-material = { group = "androidx.compose.material", name = "material", version.ref = "compose" }
+androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling", version.ref = "compose" }
+opencv = { module = "org.opencv:opencv", version.ref = "opencv" }
+tess-two = {module = "com.rmtheis:tess-two", version.ref = "tess-two"}
+volley = { module = "com.android.volley:volley", version = "1.2.1" }
+annotation = { module = "androidx.annotation:annotation", version = "1.9.1" }
+lifecycleViewModelKtx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version = "2.8.7" }
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
+preference-ktx = { module = "androidx.preference:preference-ktx", version.ref = "preferenceKtx" }
+
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+jetbrains-kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin"}
+benManes = { id = "com.github.ben-manes.versions", version = "0.36.0" }
+
