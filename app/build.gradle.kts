@@ -64,6 +64,7 @@ dependencies {
     implementation(libs.mlkit.barcode)
     implementation(libs.mlkit.detection)
     implementation(libs.mlkit.face)
+    implementation(libs.mlkit.translate)
     implementation(libs.mlkit.detection.custom)
     implementation(libs.guava)
     implementation(libs.lifecycleViewModelKtx)

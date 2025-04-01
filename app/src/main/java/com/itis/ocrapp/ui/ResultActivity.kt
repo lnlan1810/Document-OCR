@@ -3,44 +3,78 @@ package com.itis.ocrapp.ui
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.view.View
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProvider
 import com.itis.ocrapp.databinding.ActivityResultBinding
-import com.itis.ocrapp.ocr.PassportParser
 import com.itis.ocrapp.utils.showToast
 
 class ResultActivity : AppCompatActivity() {
+
     private lateinit var binding: ActivityResultBinding
+    private lateinit var viewModel: ResultViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityResultBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        val rawText = intent.getStringExtra("SCANNED_TEXT") ?: "Không có dữ liệu"
-        val formattedText = PassportParser.parse(rawText)
-        binding.resultText.text = formattedText
+        viewModel = ViewModelProvider(this)[ResultViewModel::class.java]
+        val rawText = intent.getStringExtra("SCANNED_TEXT") ?: "Нет доступных данных"
+        viewModel.initialize(rawText)
 
-        // Lấy và hiển thị ảnh chân dung
         val faceImagePath = intent.getStringExtra("FACE_IMAGE_PATH")
-        if (faceImagePath != null) {
-            val faceBitmap = BitmapFactory.decodeFile(faceImagePath)
+        faceImagePath?.let {
+            val faceBitmap = BitmapFactory.decodeFile(it)
             if (faceBitmap != null) {
                 binding.faceImageView.setImageBitmap(faceBitmap)
                 binding.faceImageView.visibility = View.VISIBLE
             }
         }
 
-        binding.copyButton.setOnClickListener {
-            copyToClipboard(formattedText)
-            showToast("Đã sao chép văn bản")
-        }
+        setupObservers()
+        setupListeners()
+        setupLanguageSpinner()
+    }
 
+    private fun setupObservers() {
+        viewModel.resultText.observe(this) { text ->
+            binding.resultText.text = text
+        }
+        viewModel.toastMessage.observe(this) { message ->
+            showToast(message)
+        }
+    }
+
+    private fun setupListeners() {
+        binding.translateButton.setOnClickListener {
+            viewModel.translateFields()
+        }
+        binding.copyButton.setOnClickListener {
+            copyToClipboard(binding.resultText.text.toString())
+            showToast("Текст скопирован")
+        }
         binding.backButton.setOnClickListener {
             finish()
+        }
+    }
+
+    private fun setupLanguageSpinner() {
+        val languages = arrayOf("Вьетнамский", "Английский", "Русский")
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, languages)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.languageSpinner.adapter = adapter
+
+        binding.languageSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+                viewModel.setTargetLanguage(position)
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>) {}
         }
     }
 
