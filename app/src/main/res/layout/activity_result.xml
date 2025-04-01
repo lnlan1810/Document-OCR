@@ -24,7 +24,29 @@
         android:padding="16dp"
         android:textSize="16sp"
         app:layout_constraintTop_toBottomOf="@id/faceImageView"
-        app:layout_constraintBottom_toTopOf="@id/buttonLayout" />
+        app:layout_constraintBottom_toTopOf="@id/translationLayout" />
+
+    <LinearLayout
+        android:id="@+id/translationLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:padding="16dp"
+        app:layout_constraintBottom_toTopOf="@id/buttonLayout">
+
+        <Spinner
+            android:id="@+id/languageSpinner"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp" />
+
+        <Button
+            android:id="@+id/translateButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Перевод" />
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/buttonLayout"
@@ -39,14 +61,14 @@
             android:id="@+id/copyButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Copy Text"
+            android:text="Копировать текст"
             android:layout_marginEnd="16dp" />
 
         <Button
             android:id="@+id/backButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Quay lại" />
+            android:text="Назад" />
 
     </LinearLayout>
 

@@ -50,7 +50,7 @@ class MainActivity : AppCompatActivity() {
                 if (isFromGallery) {
                     processTextAndFaceFromGallery(text)
                 } else {
-                    showToast("Xử lý camera đã được chuyển vào callback")
+                    showToast("Обработка камеры перенесена в обратный вызов")
                 }
             }
         )
@@ -91,7 +91,7 @@ class MainActivity : AppCompatActivity() {
                 val bitmap = ImageUtils.getBitmapFromInputImage(inputImage, this)
                 if (bitmap == null) {
                     showResult(visionText.text, null)
-                    showToast("Không thể lấy ảnh để phát hiện khuôn mặt")
+                    showToast("Невозможно получить фото для распознавания лиц")
                     imageProxy.close()
                     return@addOnSuccessListener
                 }
@@ -139,13 +139,13 @@ class MainActivity : AppCompatActivity() {
                         imageProxy.close() // Đóng ImageProxy sau khi xử lý xong
                     }
                     .addOnFailureListener { e ->
-                        showToast("Lỗi phát hiện khuôn mặt: ${e.message}")
+                        showToast("Ошибка распознавания лиц: ${e.message}")
                         showResult(visionText.text, null)
                         imageProxy.close() // Đóng ImageProxy nếu có lỗi
                     }
             }
             .addOnFailureListener { e ->
-                showToast("Lỗi nhận diện: ${e.message}")
+                showToast("Ошибка идентификации: ${e.message}")
                 imageProxy.close() // Đóng ImageProxy nếu có lỗi
             }
     }
@@ -162,7 +162,7 @@ class MainActivity : AppCompatActivity() {
         val bitmap = ImageUtils.getBitmapFromUri(uri, this)
         if (bitmap == null) {
             showResult(text, null)
-            showToast("Không thể lấy ảnh từ gallery để phát hiện khuôn mặt")
+            showToast("Невозможно получить фотографию из галереи для распознавания лиц")
             return
         }
 
@@ -209,7 +209,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             .addOnFailureListener { e ->
-                showToast("Lỗi phát hiện khuôn mặt: ${e.message}")
+                showToast("Ошибка распознавания лиц: ${e.message}")
                 showResult(text, null)
             }
     }

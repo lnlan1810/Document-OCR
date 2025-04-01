@@ -24,7 +24,7 @@ object PassportParser {
                     dateOfBirth = lines.getOrNull(i + 1) ?: extractDate(line)
                 }
                 line.contains("Giới tính") || line.contains("Sex") -> {
-                    sex = lines.getOrNull(i + 1) ?: extractSex(line)
+                    sex = extractSex(lines.getOrNull(i + 1) ?: line)
                 }
                 line.contains("Ngày cấp") || line.contains("Date of issue") -> {
                     dateOfIssue = lines.getOrNull(i + 1) ?: extractDate(line)
@@ -57,12 +57,15 @@ object PassportParser {
         return datePattern.find(text)?.value
     }
     private fun extractSex(text: String): String? {
+        val normalizedText = text.uppercase()
+
         return when {
-            text.contains("Nữ") || text.contains("E") || text.contains("F")-> "con gái"
+            text.contains("Nữ") || text.contains("E") || text.contains("F")-> "Nữ"
             text.contains("Nam") || text.contains("M") -> "Nam"
             else -> null
         }
     }
+
 
     private fun extractPassportNo(text: String): String? {
         val passportPattern = Regex("[A-Z]\\d{7}")
