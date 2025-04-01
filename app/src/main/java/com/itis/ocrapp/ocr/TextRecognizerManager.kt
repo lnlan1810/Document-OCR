@@ -17,7 +17,7 @@ class TextRecognizerManager(
                 onSuccessWithSource(visionText.text, isFromGallery)
             }
             .addOnFailureListener { e ->
-                onFailure("Lỗi nhận diện: ${e.message}")
+                onFailure("Ошибка идентификации: ${e.message}")
             }
     }
 }

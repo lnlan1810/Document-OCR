@@ -32,6 +32,7 @@ mlkit-barcode= "17.0.0"
 guava = "32.0.1-jre"
 preferenceKtx = "1.2.1"
 face-detection = "16.1.5"
+translate = "17.0.2"
 
 [libraries]
 ttvocr = { module = "libs:ttvocr" }
@@ -52,6 +53,8 @@ mlkit-barcode = { module = "com.google.mlkit:barcode-scanning", version.ref = "m
 mlkit-detection = { module = "com.google.mlkit:object-detection", version.ref = "mlkit-barcode" }
 mlkit-detection-custom = { module = "com.google.mlkit:object-detection-custom", version.ref = "mlkit-barcode" }
 mlkit-face = { module = "com.google.mlkit:face-detection", version.ref = "face-detection" }
+mlkit-translate = { module = "com.google.mlkit:translate", version.ref = "translate" }
+
 camerax-core = { module = "androidx.camera:camera-core", version.ref = "camerax-core" }
 camerax-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "camerax-lifecycle" }
 camerax-view = { module = "androidx.camera:camera-view", version.ref = "camerax-view" }
