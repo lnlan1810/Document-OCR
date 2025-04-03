@@ -45,17 +45,16 @@ class CameraManager(
                         object : ImageCapture.OnImageCapturedCallback() {
                             override fun onCaptureSuccess(image: ImageProxy) {
                                 onImageCaptured(image)
-                                // Không đóng image ở đây, để MainActivity xử lý
                             }
 
                             override fun onError(exception: ImageCaptureException) {
-                                // Xử lý lỗi
+                                // Handle error
                             }
                         }
                     )
                 }
             } catch (e: Exception) {
-                // Xử lý lỗi
+                // Handle error
             }
         }, ContextCompat.getMainExecutor(context))
     }
