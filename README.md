@@ -9,7 +9,6 @@ An Android app for Optical Character Recognition (OCR) to extract data from Viet
 - [Features](#features)
 - [Technologies](#technologies)
 - [Contributing](#contributing)
-- [License](#license)
 
 ## Installation
 1. Clone the repo:
@@ -45,5 +44,3 @@ An Android app for Optical Character Recognition (OCR) to extract data from Viet
 4. Push (`git push origin feature/your-feature`).
 5. Open a Pull Request.
 
-## License
-MIT License - see [LICENSE](LICENSE).
