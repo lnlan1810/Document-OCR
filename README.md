@@ -3,6 +3,9 @@
 ## Description
 An Android app for Optical Character Recognition (OCR) to extract data from Vietnamese documents like passports. It uses CameraX for image capture, ML Kit for text and face recognition, and supports translation into Vietnamese, English, and Russian. Built with MVVM for maintainability.
 
+## Video Demo
+https://disk.yandex.ru/i/Ky4BYFhJ5lVbNA
+
 ## Table of Contents
 - [Installation](#installation)
 - [Usage](#usage)
