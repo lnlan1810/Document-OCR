@@ -19,7 +19,7 @@ https://github.com/user-attachments/assets/67284707-3450-44f8-a79b-47adce01a4fd
    git clone https://github.com/lnlan1810/Document-OCR.git
    ```
 2. Open in Android Studio and sync dependencies.
-3. Run on an Android device/emulator (API 21+).
+3. Run on an Android device/emulator (API 26+).
 
 ## Usage
 1. Open the app and click "Scan" to capture/select an image.
