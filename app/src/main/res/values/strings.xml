@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">OCRApp</string>
+    <string-array name="document_types">
+        <item>Hộ chiếu</item>
+        <item>Giấy phép lái xe</item>
+        <item>Căn cước công dân</item>
+    </string-array>
 </resources>
