@@ -24,36 +24,7 @@ class ResultViewModel(
 
     private lateinit var originalFields: Map<String, String>
     private var targetLanguage: String = "vi"
-
-    private val fieldLabels = mapOf(
-        "vi" to mapOf(
-            "Họ và tên" to "Họ và tên",
-            "Ngày sinh" to "Ngày sinh",
-            "Giới tính" to "Giới tính",
-            "Ngày cấp" to "Ngày cấp",
-            "Có giá trị đến" to "Có giá trị đến",
-            "Số hộ chiếu" to "Số hộ chiếu",
-            "Nơi sinh" to "Nơi sinh"
-        ),
-        "en" to mapOf(
-            "Họ và tên" to "Full Name",
-            "Ngày sinh" to "Date of Birth",
-            "Giới tính" to "Gender",
-            "Ngày cấp" to "Date of Issue",
-            "Có giá trị đến" to "Expiry Date",
-            "Số hộ chiếu" to "Passport Number",
-            "Nơi sinh" to "Place of Birth"
-        ),
-        "ru" to mapOf(
-            "Họ và tên" to "Фамилия и имя",
-            "Ngày sinh" to "Дата рождения",
-            "Giới tính" to "Пол",
-            "Ngày cấp" to "Дата выдачи",
-            "Có giá trị đến" to "Действителен до",
-            "Số hộ chiếu" to "Номер паспорта",
-            "Nơi sinh" to "Место рождения"
-        )
-    )
+    private var documentType: String = "passport"
 
     private val vietnameseToRussian = mapOf(
         "a" to "а", "b" to "б", "c" to "к", "d" to "д", "đ" to "д",
@@ -63,10 +34,11 @@ class ResultViewModel(
         "t" to "т", "u" to "у", "v" to "в", "x" to "кс", "y" to "и"
     )
 
-    fun initialize(rawText: String) {
+    fun initialize(rawText: String, documentType: String) {
+        this.documentType = documentType
         viewModelScope.launch {
-            val passport = parsePassportUseCase.execute(rawText)
-            originalFields = passport.toMap()
+            val document = parsePassportUseCase.execute(rawText, documentType)
+            originalFields = document.toMap()
             displayFields(originalFields)
             if (targetLanguage != "vi") ensureTranslationModel()
         }
@@ -79,13 +51,17 @@ class ResultViewModel(
             2 -> TranslateLanguage.RUSSIAN
             else -> "vi"
         }
-        if (targetLanguage != "vi") ensureTranslationModel()
-        else displayFields(originalFields)
+        viewModelScope.launch {
+            if (targetLanguage != "vi") ensureTranslationModel()
+            else displayFields(originalFields)
+        }
     }
 
     fun translateFields() {
         if (targetLanguage == "vi") {
-            displayFields(originalFields)
+            viewModelScope.launch {
+                displayFields(originalFields)
+            }
             return
         }
 
@@ -96,12 +72,12 @@ class ResultViewModel(
 
             fieldsToTranslate.forEach { (key, value) ->
                 when {
-                    key in listOf("Ngày sinh", "Ngày cấp", "Có giá trị đến", "Số hộ chiếu") -> {
+                    key in listOf("Ngày sinh", "Ngày cấp", "Có giá trị đến", "Số tài liệu", "Số CMND", "Hạng") -> {
                         translatedFields[key] = value
                         completedTranslations++
                         if (completedTranslations == fieldsToTranslate.size) displayFields(translatedFields)
                     }
-                    targetLanguage == TranslateLanguage.RUSSIAN && key in listOf("Họ và tên", "Nơi sinh") -> {
+                    targetLanguage == TranslateLanguage.RUSSIAN && key in listOf("Họ và tên", "Nơi sinh", "Địa chỉ", "Quê quán") -> {
                         translatedFields[key] = transliterateVietnameseToRussian(value)
                         completedTranslations++
                         if (completedTranslations == fieldsToTranslate.size) displayFields(translatedFields)
@@ -151,25 +127,38 @@ class ResultViewModel(
         return transliteratedWords.joinToString(" ")
     }
 
-    private fun displayFields(fields: Map<String, String>) {
-        val labels = fieldLabels[targetLanguage] ?: fieldLabels["vi"]!!
+    private suspend fun displayFields(fields: Map<String, String>) {
         val result = StringBuilder()
         fields.forEach { (key, value) ->
-            val label = labels[key] ?: key
+            val label = if (targetLanguage == "vi") {
+                key
+            } else {
+                try {
+                    translateTextUseCase.execute(key, targetLanguage) 
+                } catch (e: Exception) {
+                    _toastMessage.value = "Lỗi dịch nhãn $key: ${e.message}"
+                    key
+                }
+            }
             result.append("$label: $value\n")
         }
         _resultText.value = result.toString().trim()
     }
 
-    private fun com.itis.ocrapp.data.model.PassportData.toMap(): Map<String, String> {
-        return mapOf(
-            "Họ và tên" to (fullName ?: ""),
+    private fun com.itis.ocrapp.data.model.DocumentData.toMap(): Map<String, String> {
+        val fields = mutableMapOf(
+            "Tên đầy đủ" to (fullName ?: ""),
             "Ngày sinh" to (dateOfBirth ?: ""),
             "Giới tính" to (sex ?: ""),
             "Ngày cấp" to (dateOfIssue ?: ""),
             "Có giá trị đến" to (dateOfExpiry ?: ""),
-            "Số hộ chiếu" to (passportNumber ?: ""),
-            "Nơi sinh" to (placeOfBirth ?: "")
-        ).filterValues { it.isNotEmpty() }
+            "Số tài liệu" to (documentNumber ?: ""),
+            "Nơi sinh" to (placeOfBirth ?: ""),
+            "Số CMND" to (idCardNumber ?: ""),
+            "Địa chỉ" to (address ?: ""),
+            "Hạng" to (licenseClass ?: ""),
+            "Quê quán" to (placeOfOrigin ?: ""),
+        )
+        return fields.filterValues { it.isNotEmpty() }
     }
 }

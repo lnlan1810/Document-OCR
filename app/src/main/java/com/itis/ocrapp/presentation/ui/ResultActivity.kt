@@ -25,9 +25,13 @@ class ResultActivity : AppCompatActivity() {
         binding = ActivityResultBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        viewModel = ViewModelProvider(this, ResultViewModelFactory(this))[ResultViewModel::class.java]
+        // Khởi tạo ViewModel với Factory
+        val factory = ResultViewModelFactory(applicationContext)
+        viewModel = ViewModelProvider(this, factory)[ResultViewModel::class.java]
+
         val rawText = intent.getStringExtra("SCANNED_TEXT") ?: "Không có dữ liệu"
-        viewModel.initialize(rawText)
+        val documentType = intent.getStringExtra("DOCUMENT_TYPE") ?: "passport"
+        viewModel.initialize(rawText, documentType)
 
         val faceImagePath = intent.getStringExtra("FACE_IMAGE_PATH")
         faceImagePath?.let {
