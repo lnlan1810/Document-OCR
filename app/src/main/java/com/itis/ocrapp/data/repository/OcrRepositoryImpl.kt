@@ -10,6 +10,7 @@ import com.google.mlkit.vision.common.InputImage
 import com.itis.ocrapp.data.model.DocumentData
 import com.itis.ocrapp.data.source.OcrDataSource
 import com.itis.ocrapp.domain.repository.OcrRepository
+import com.itis.ocrapp.utils.ImageProcessingUtils
 import com.itis.ocrapp.utils.ImageUtils
 import java.io.File
 import java.text.Normalizer
@@ -21,24 +22,96 @@ class OcrRepositoryImpl(
 
     @OptIn(ExperimentalGetImage::class)
     override suspend fun recognizeTextFromCamera(imageProxy: androidx.camera.core.ImageProxy): Pair<String, String?> {
+        // Lấy bitmap từ imageProxy
         val inputImage = InputImage.fromMediaImage(imageProxy.image!!, imageProxy.imageInfo.rotationDegrees)
-        val text = ocrDataSource.recognizeText(inputImage)
-        val bitmap = ImageUtils.getBitmapFromInputImage(inputImage, context)
+        var bitmap = ImageUtils.getBitmapFromInputImage(inputImage, context)
+
+        // Kiểm tra và cải thiện chất lượng ảnh
+        bitmap = bitmap?.let { convertToArgb8888(it) }?.let { ImageProcessingUtils.enhanceImageQuality(it) }
+
+        // Tạo lại InputImage từ bitmap đã xử lý
+        val enhancedInputImage = bitmap?.let { InputImage.fromBitmap(it, imageProxy.imageInfo.rotationDegrees) }
+            ?: inputImage
+
+        // Nhận diện văn bản
+        val text = ocrDataSource.recognizeText(enhancedInputImage)
         val facePath = bitmap?.let { detectAndCropFace(inputImage, it) }
         imageProxy.close()
         return Pair(text, facePath)
     }
 
     override suspend fun recognizeTextFromGallery(uri: Uri): Pair<String, String?> {
-        val inputImage = InputImage.fromFilePath(context, uri)
-        val text = ocrDataSource.recognizeText(inputImage)
-        val bitmap = ImageUtils.getBitmapFromUri(uri, context)
+        // Tạo InputImage từ URI
+        val inputImage = try {
+            InputImage.fromFilePath(context, uri)
+        } catch (e: Exception) {
+            Log.e("OcrRepositoryImpl", "Error creating InputImage from URI: ${e.message}")
+            return Pair("", null)
+        }
+
+        // Lấy bitmap từ URI và chuyển đổi sang ARGB_8888
+        var bitmap = ImageUtils.getBitmapFromUri(uri, context)?.let { convertToArgb8888(it) }
+
+        // Kiểm tra và cải thiện chất lượng ảnh
+        bitmap = try {
+            bitmap?.let { ImageProcessingUtils.enhanceImageQuality(it) }
+        } catch (e: Exception) {
+            Log.e("OcrRepositoryImpl", "Error enhancing image quality: ${e.message}")
+            bitmap // Nếu lỗi, sử dụng bitmap gốc
+        }
+
+        // Tạo InputImage từ bitmap đã xử lý, giữ nguyên góc xoay từ inputImage gốc
+        val enhancedInputImage = bitmap?.let { InputImage.fromBitmap(it, inputImage.rotationDegrees) }
+            ?: inputImage
+
+        // Nhận diện văn bản
+        val text = try {
+            ocrDataSource.recognizeText(enhancedInputImage)
+        } catch (e: Exception) {
+            Log.e("OcrRepositoryImpl", "Error recognizing text: ${e.message}")
+            ""
+        }
+
         val facePath = bitmap?.let { detectAndCropFace(inputImage, it) }
         return Pair(text, facePath)
     }
 
+    private fun convertToArgb8888(bitmap: Bitmap): Bitmap {
+        // Kiểm tra nếu bitmap đã ở định dạng ARGB_8888
+        if (bitmap.config == Bitmap.Config.ARGB_8888 && !bitmap.isHardwareAccelerated()) {
+            return bitmap
+        }
+
+        // Nếu bitmap ở định dạng HARDWARE, chuyển sang ARGB_8888
+        val argbBitmap = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(argbBitmap)
+
+        // Sao chép bitmap gốc sang bitmap mới
+        try {
+            // Nếu bitmap là HARDWARE, cần chuyển sang phần mềm trước
+            val softwareBitmap = if (bitmap.config == Bitmap.Config.HARDWARE) {
+                bitmap.copy(Bitmap.Config.ARGB_8888, true)
+            } else {
+                bitmap
+            }
+            canvas.drawBitmap(softwareBitmap, 0f, 0f, null)
+            if (softwareBitmap != bitmap) {
+                softwareBitmap.recycle()
+            }
+        } catch (e: Exception) {
+            Log.e("OcrRepositoryImpl", "Error converting bitmap to ARGB_8888: ${e.message}")
+        }
+
+        return argbBitmap
+    }
+
+    private fun Bitmap.isHardwareAccelerated(): Boolean {
+        return this.config == Bitmap.Config.HARDWARE
+    }
+
     private suspend fun detectAndCropFace(inputImage: InputImage, bitmap: Bitmap): String? {
         val faces = ocrDataSource.detectFaces(inputImage)
+        Log.d("OcrRepositoryImpl", "Number of faces detected: ${faces.size}")
         return if (faces.isNotEmpty()) {
             val faceBitmap = ocrDataSource.cropFaceBitmap(bitmap, faces[0])
             val file = File(context.cacheDir, "face_image_${System.currentTimeMillis()}.png")
@@ -47,8 +120,8 @@ class OcrRepositoryImpl(
         } else null
     }
 
-    override suspend fun parseDocument(rawText: String, documentType: String): DocumentData {
 
+    override suspend fun parseDocument(rawText: String, documentType: String): DocumentData {
         val lines = rawText.split("\n").map {
             it.trim()
                 .replace("\\s+".toRegex(), " ")
@@ -65,7 +138,6 @@ class OcrRepositoryImpl(
 
     private fun parsePassport(lines: List<String>): DocumentData {
         Log.d("OcrRepositoryImpl", "Raw text lines: ${lines.joinToString("")}")
-
         var fullName: String? = null
         var dateOfBirth: String? = null
         var sex: String? = null
@@ -126,7 +198,6 @@ class OcrRepositoryImpl(
                     placeOfOrigin = lines.getOrNull(i + 1)?.trim() ?: ""
                     Log.d("OcrRepositoryImpl", "Place of origin extracted: $placeOfOrigin")
                 }
-
             }
         }
 
@@ -148,7 +219,6 @@ class OcrRepositoryImpl(
 
     private fun parseCitizenId(lines: List<String>): DocumentData {
         Log.d("OcrRepositoryImpl", "Raw text lines: ${lines.joinToString("\n")}")
-
         var fullName: String? = null
         var dateOfBirth: String? = null
         var sex: String? = null
@@ -181,12 +251,12 @@ class OcrRepositoryImpl(
                     documentNumber = extractDocumentNumber(numberText, "citizen_id")
                     Log.d("OcrRepositoryImpl", "Document number extracted: $documentNumber")
                 }
-                address == null && (line.contains("noi thuong tru") || line.contains("place of residence") || line.contains("noi thuờng trú")) -> {
+                address == null && (line.contains("noi thuong tru") || line.contains("place of residence") || line.contains("noi thuờng trú") || line.contains("nơi thuờng trú")) -> {
                     address = extractValue(line, listOf("noi thuong tru", "place of residence", "noi thuờng trú", "nơi thuờng trú", "/", "noi thường trú", "|"), lines.getOrNull(i + 1))
                     Log.d("OcrRepositoryImpl", "Address extracted: $address")
                 }
                 placeOfOrigin == null && (line.contains("que quan") || line.contains("place of origin") || line.contains("quê quán")) -> {
-                    placeOfOrigin = extractValue(line, listOf("que quan", "quê quán", "place of origin", "place of oigin", "/i", "/", "|", "place of onigin"), lines.getOrNull(i + 1))
+                    placeOfOrigin = extractValue(line, listOf("que quan", "quê quán", "place of origin", "place of oigin", "/i", "/", "|", "i", "place of onigin"), lines.getOrNull(i + 1))
                     placeOfOrigin = placeOfOrigin?.replace("que quan", "", ignoreCase = true)
                         ?.replace("place of origin", "", ignoreCase = true)?.trim()
                     Log.d("OcrRepositoryImpl", "Place of origin extracted: $placeOfOrigin")
@@ -218,22 +288,18 @@ class OcrRepositoryImpl(
         }
         cleanedLine = cleanedLine.trim()
 
-        // Nếu có dấu ":" hoặc có nhiều khoảng trắng thì split
         val parts = cleanedLine.split(Regex("[:\\s]{2,}"))
         return if (parts.size >= 2) parts[1].trim() else null
     }
-
 
     private fun extractValue(line: String, keywords: List<String>, nextLine: String? = null): String? {
         var value = line
         keywords.forEach { keyword ->
             value = value.replace(keyword, "", ignoreCase = true).trim()
         }
-        // Kiểm tra giá trị có hợp lệ không (ít nhất 3 ký tự và không chứa từ khóa)
         return if (value.isNotBlank() && value.length > 2 && !keywords.any { value.lowercase().contains(it) }) {
             value
         } else {
-            // Thử lấy giá trị từ dòng tiếp theo nếu có
             nextLine?.takeIf { it.isNotBlank() && it.length > 2 }
         }
     }

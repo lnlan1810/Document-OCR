@@ -77,7 +77,7 @@ class ResultViewModel(
                         completedTranslations++
                         if (completedTranslations == fieldsToTranslate.size) displayFields(translatedFields)
                     }
-                    targetLanguage == TranslateLanguage.RUSSIAN && key in listOf("Họ và tên", "Nơi sinh", "Địa chỉ", "Quê quán") -> {
+                    targetLanguage == TranslateLanguage.RUSSIAN && key in listOf("Tên đầy đủ", "Nơi sinh", "Địa chỉ", "Quê quán") -> {
                         translatedFields[key] = transliterateVietnameseToRussian(value)
                         completedTranslations++
                         if (completedTranslations == fieldsToTranslate.size) displayFields(translatedFields)
@@ -134,7 +134,7 @@ class ResultViewModel(
                 key
             } else {
                 try {
-                    translateTextUseCase.execute(key, targetLanguage) 
+                    translateTextUseCase.execute(key, targetLanguage)
                 } catch (e: Exception) {
                     _toastMessage.value = "Lỗi dịch nhãn $key: ${e.message}"
                     key

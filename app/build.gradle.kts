@@ -71,6 +71,7 @@ dependencies {
     implementation(libs.annotation)
     implementation(libs.volley)
     implementation(libs.preference.ktx)
+    implementation(libs.opencv)
 
     implementation(libs.tess.two)
     implementation(libs.coroutines)
