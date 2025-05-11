@@ -87,5 +87,5 @@ dependencies {
 
     // implementation(libs.android.pdf.viewer)
    // implementation(libs.pdfviewer)
-
+    implementation(libs.androidx.security.crypto)
 }

@@ -37,6 +37,8 @@ pdfcreatorandroid = "3.0.2"
 pdfviewer = "3.2.0"
 pdfviewer2 = "3.0.0-beta.1"
 notification = "1.1.0"
+security-crypto = "1.1.0-alpha06"
+
 [libraries]
 ttvocr = { module = "libs:ttvocr" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -84,6 +86,7 @@ pdfcreatorandroid = { module = "com.github.tejpratap46:PDFCreatorAndroid", versi
 android-pdf-viewer = { module = "com.github.barteksc:android-pdf-viewer", version.ref = "pdfviewer" }
 pdfviewer = { module = "com.github.DImuthuUpe:AndroidPdfViewer", version.ref = "pdfviewer2" }
 #notification = { module = "androidx.notification:notification-compatr", version.ref = "notification" }
+androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "security-crypto" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

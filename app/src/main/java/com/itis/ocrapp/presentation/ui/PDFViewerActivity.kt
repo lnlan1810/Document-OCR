@@ -86,10 +86,10 @@ class PDFViewerActivity : AppCompatActivity() {
                 binding.pdfImageView.setImageBitmap(bitmap)
                 page.close()
             } else {
-                showToast("PDF không có trang nào")
+                showToast("В PDF нет страниц")
             }
         } catch (e: Exception) {
-            showToast("Lỗi khi hiển thị PDF: ${e.message}")
+            showToast("Ошибка отображения PDF: ${e.message}")
             e.printStackTrace()
         }
     }
@@ -99,7 +99,7 @@ class PDFViewerActivity : AppCompatActivity() {
             try {
                 val sourceFile = File(path)
                 if (!sourceFile.exists()) {
-                    showToast("File PDF không tồn tại")
+                    showToast("PDF-файл не существует")
                     return
                 }
                 val contentValues = ContentValues().apply {
@@ -124,7 +124,7 @@ class PDFViewerActivity : AppCompatActivity() {
                             ) == PackageManager.PERMISSION_GRANTED
                         ) {
                             showDownloadNotification(sourceFile.name, uri)
-                            showToast("Đã tải PDF về thư mục Downloads: ${sourceFile.name}")
+                            showToast("PDF загружен в папку «Загрузки»: ${sourceFile.name}")
                         } else {
                             ActivityCompat.requestPermissions(
                                 this,
@@ -134,14 +134,14 @@ class PDFViewerActivity : AppCompatActivity() {
                         }
                     } else {
                         showDownloadNotification(sourceFile.name, uri)
-                        showToast("Đã tải PDF về thư mục Downloads: ${sourceFile.name}")
+                        showToast("PDF загружен в папку «Загрузки»: ${sourceFile.name}")
                     }
-                } ?: showToast("Lỗi khi lưu PDF")
+                } ?: showToast("Ошибка сохранения PDF")
             } catch (e: Exception) {
-                showToast("Lỗi khi tải PDF: ${e.message}")
+                showToast("Ошибка загрузки PDF: ${e.message}")
                 e.printStackTrace()
             }
-        } ?: showToast("Không có file PDF để tải")
+        } ?: showToast("Нет PDF-файла, доступного для загрузки")
     }
 
     private fun showDownloadNotification(fileName: String, fileUri: Uri) {
@@ -150,7 +150,7 @@ class PDFViewerActivity : AppCompatActivity() {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         if (openIntent.resolveActivity(packageManager) == null) {
-            showToast("Không tìm thấy ứng dụng xem PDF")
+            showToast("Просмотрщик PDF не найден")
         }
         val pendingIntent = PendingIntent.getActivity(
             this,
@@ -164,8 +164,8 @@ class PDFViewerActivity : AppCompatActivity() {
         )
         val notification = NotificationCompat.Builder(this, "ocr_download_channel")
             .setSmallIcon(android.R.drawable.ic_menu_save)
-            .setContentTitle("PDF Đã Tải")
-            .setContentText("File $fileName đã được lưu vào Downloads. Nhấn để mở.")
+            .setContentTitle("PDF-файл загружен")
+            .setContentText("File $fileName сохранён в разделе «Загрузки». Нажмите, чтобы открыть.")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
@@ -175,7 +175,7 @@ class PDFViewerActivity : AppCompatActivity() {
                 notify(NOTIFICATION_ID, notification)
             }
         } catch (e: SecurityException) {
-            showToast("Không thể hiển thị thông báo do thiếu quyền")
+            showToast("Невозможно отобразить уведомление из-за отсутствия разрешений")
             e.printStackTrace()
         }
     }
@@ -191,11 +191,11 @@ class PDFViewerActivity : AppCompatActivity() {
                 pendingFileName?.let { name ->
                     pendingFileUri?.let { uri ->
                         showDownloadNotification(name, uri)
-                        showToast("Đã tải PDF về thư mục Downloads: $name")
+                        showToast("PDF загружен: $name")
                     }
                 }
             } else {
-                showToast("Quyền thông báo bị từ chối, không thể hiển thị thông báo")
+                showToast("Разрешение на уведомление отклонено, уведомление не может быть отображено")
             }
         }
     }
