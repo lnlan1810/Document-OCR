@@ -20,12 +20,10 @@ class MainViewModel(
 
     private val executor = Executors.newSingleThreadExecutor()
     private lateinit var cameraManager: CameraManager
-
     private val _toastMessage = MutableLiveData<String>()
     val toastMessage: LiveData<String> get() = _toastMessage
-
-    private val _navigateToResult = MutableLiveData<Pair<String, String?>>()
-    val navigateToResult: LiveData<Pair<String, String?>> get() = _navigateToResult
+    private val _navigateToResult = MutableLiveData<Triple<String, String?, String?>>()
+    val navigateToResult: LiveData<Triple<String, String?, String?>> get() = _navigateToResult
 
     fun initialize(context: Context, binding: com.itis.ocrapp.databinding.ActivityMainBinding) {
         cameraManager = CameraManager(context, context as com.itis.ocrapp.presentation.ui.MainActivity, binding, executor) { image ->
@@ -44,8 +42,8 @@ class MainViewModel(
     fun processGalleryImage(uri: android.net.Uri) {
         viewModelScope.launch {
             try {
-                val (text, facePath) = processImageUseCase.processGalleryImage(uri)
-                _navigateToResult.value = Pair(text, facePath)
+                val (text, facePath, documentPath) = processImageUseCase.processGalleryImage(uri)
+                _navigateToResult.value = Triple(text, facePath, documentPath)
             } catch (e: Exception) {
                 _toastMessage.value = "Ошибка обработки изображения: ${e.message}"
             }
@@ -55,8 +53,8 @@ class MainViewModel(
     private fun processCameraImage(imageProxy: androidx.camera.core.ImageProxy) {
         viewModelScope.launch {
             try {
-                val (text, facePath) = processImageUseCase.processCameraImage(imageProxy)
-                _navigateToResult.value = Pair(text, facePath)
+                val (text, facePath, documentPath) = processImageUseCase.processCameraImage(imageProxy)
+                _navigateToResult.value = Triple(text, facePath, documentPath)
             } catch (e: Exception) {
                 _toastMessage.value = "Ошибка обработки изображения: ${e.message}"
             }

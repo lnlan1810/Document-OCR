@@ -5,11 +5,12 @@ import com.itis.ocrapp.domain.repository.OcrRepository
 
 class ProcessImageUseCase(private val ocrRepository: OcrRepository) {
 
-    suspend fun processCameraImage(imageProxy: androidx.camera.core.ImageProxy): Pair<String, String?> {
+    suspend fun processCameraImage(imageProxy: androidx.camera.core.ImageProxy): Triple<String, String?, String?> {
         return ocrRepository.recognizeTextFromCamera(imageProxy)
     }
 
-    suspend fun processGalleryImage(uri: Uri): Pair<String, String?> {
+    suspend fun processGalleryImage(uri: Uri): Triple<String, String?, String?> {
         return ocrRepository.recognizeTextFromGallery(uri)
+
     }
 }

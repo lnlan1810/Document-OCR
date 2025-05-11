@@ -3,6 +3,7 @@ package com.itis.ocrapp.presentation.ui
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.view.View
@@ -25,7 +26,6 @@ class ResultActivity : AppCompatActivity() {
         binding = ActivityResultBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Khởi tạo ViewModel với Factory
         val factory = ResultViewModelFactory(applicationContext)
         viewModel = ViewModelProvider(this, factory)[ResultViewModel::class.java]
 
@@ -67,6 +67,13 @@ class ResultActivity : AppCompatActivity() {
         binding.backButton.setOnClickListener {
             finish()
         }
+        binding.btnCreatePdf.setOnClickListener {
+            val intent = Intent(this, PDFPreviewActivity::class.java).apply {
+                putExtra("DOCUMENT_IMAGE_PATH", intent.getStringExtra("DOCUMENT_IMAGE_PATH"))
+                putExtra("TRANSLATION_TEXT", binding.resultText.text.toString())
+            }
+            startActivity(intent)
+        }
     }
 
     private fun setupLanguageSpinner() {
@@ -74,7 +81,6 @@ class ResultActivity : AppCompatActivity() {
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, languages)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.languageSpinner.adapter = adapter
-
         binding.languageSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
                 viewModel.setTargetLanguage(position)
