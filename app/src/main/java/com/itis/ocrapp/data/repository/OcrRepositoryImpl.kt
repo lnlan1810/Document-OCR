@@ -7,13 +7,17 @@ import android.util.Log
 import androidx.annotation.OptIn
 import androidx.camera.core.ExperimentalGetImage
 import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.objects.DetectedObject
+import com.google.mlkit.vision.objects.ObjectDetection
+import com.google.mlkit.vision.objects.defaults.ObjectDetectorOptions
 import com.itis.ocrapp.data.model.DocumentData
 import com.itis.ocrapp.data.source.OcrDataSource
 import com.itis.ocrapp.domain.repository.OcrRepository
 import com.itis.ocrapp.utils.ImageProcessingUtils
 import com.itis.ocrapp.utils.ImageUtils
+import kotlinx.coroutines.tasks.await
 import java.io.File
-import java.text.Normalizer
+import java.io.FileOutputStream
 
 class OcrRepositoryImpl(
     private val ocrDataSource: OcrDataSource,
@@ -21,50 +25,69 @@ class OcrRepositoryImpl(
 ) : OcrRepository {
 
     @OptIn(ExperimentalGetImage::class)
-    override suspend fun recognizeTextFromCamera(imageProxy: androidx.camera.core.ImageProxy): Pair<String, String?> {
-        // Lấy bitmap từ imageProxy
+    override suspend fun recognizeTextFromCamera(imageProxy: androidx.camera.core.ImageProxy): Triple<String, String?, String?> {
+        // Get bitmap from imageProxy
         val inputImage = InputImage.fromMediaImage(imageProxy.image!!, imageProxy.imageInfo.rotationDegrees)
         var bitmap = ImageUtils.getBitmapFromInputImage(inputImage, context)
 
-        // Kiểm tra và cải thiện chất lượng ảnh
+        // Enhance image quality
         bitmap = bitmap?.let { convertToArgb8888(it) }?.let { ImageProcessingUtils.enhanceImageQuality(it) }
 
-        // Tạo lại InputImage từ bitmap đã xử lý
-        val enhancedInputImage = bitmap?.let { InputImage.fromBitmap(it, imageProxy.imageInfo.rotationDegrees) }
+        // Detect and crop document area (passport or citizen ID)
+        val croppedBitmap = bitmap?.let { detectAndCropDocument(it) } ?: bitmap
+
+        // Save cropped document image
+        val documentFile = File(context.cacheDir, "document_image_${System.currentTimeMillis()}.png")
+        croppedBitmap?.compress(Bitmap.CompressFormat.PNG, 100, FileOutputStream(documentFile))
+        val documentPath = documentFile.absolutePath
+
+        // Create InputImage from cropped bitmap for text recognition
+        val enhancedInputImage = croppedBitmap?.let { InputImage.fromBitmap(it, imageProxy.imageInfo.rotationDegrees) }
             ?: inputImage
 
-        // Nhận diện văn bản
+        // Recognize text
         val text = ocrDataSource.recognizeText(enhancedInputImage)
+
+        // Detect and crop face (unchanged)
         val facePath = bitmap?.let { detectAndCropFace(inputImage, it) }
+
         imageProxy.close()
-        return Pair(text, facePath)
+        return Triple(text, facePath, documentPath)
     }
 
-    override suspend fun recognizeTextFromGallery(uri: Uri): Pair<String, String?> {
-        // Tạo InputImage từ URI
+    override suspend fun recognizeTextFromGallery(uri: Uri): Triple<String, String?, String?> {
+        // Create InputImage from URI
         val inputImage = try {
             InputImage.fromFilePath(context, uri)
         } catch (e: Exception) {
             Log.e("OcrRepositoryImpl", "Error creating InputImage from URI: ${e.message}")
-            return Pair("", null)
+            return Triple("", null, null)
         }
 
-        // Lấy bitmap từ URI và chuyển đổi sang ARGB_8888
+        // Get bitmap from URI and convert to ARGB_8888
         var bitmap = ImageUtils.getBitmapFromUri(uri, context)?.let { convertToArgb8888(it) }
 
-        // Kiểm tra và cải thiện chất lượng ảnh
+        // Detect and crop document area (passport or citizen ID)
+        val croppedBitmap = bitmap?.let { detectAndCropDocument(it) } ?: bitmap
+
+        // Save cropped document image
+        val documentFile = File(context.cacheDir, "document_image_${System.currentTimeMillis()}.png")
+        croppedBitmap?.compress(Bitmap.CompressFormat.PNG, 100, FileOutputStream(documentFile))
+        val documentPath = documentFile.absolutePath
+
+        // Enhance image quality for text recognition
         bitmap = try {
-            bitmap?.let { ImageProcessingUtils.enhanceImageQuality(it) }
+            croppedBitmap?.let { ImageProcessingUtils.enhanceImageQuality(it) }
         } catch (e: Exception) {
             Log.e("OcrRepositoryImpl", "Error enhancing image quality: ${e.message}")
-            bitmap // Nếu lỗi, sử dụng bitmap gốc
+            croppedBitmap // Use cropped bitmap if enhancement fails
         }
 
-        // Tạo InputImage từ bitmap đã xử lý, giữ nguyên góc xoay từ inputImage gốc
+        // Create InputImage from cropped bitmap for text recognition
         val enhancedInputImage = bitmap?.let { InputImage.fromBitmap(it, inputImage.rotationDegrees) }
             ?: inputImage
 
-        // Nhận diện văn bản
+        // Recognize text
         val text = try {
             ocrDataSource.recognizeText(enhancedInputImage)
         } catch (e: Exception) {
@@ -72,23 +95,70 @@ class OcrRepositoryImpl(
             ""
         }
 
+        // Detect and crop face (unchanged)
         val facePath = bitmap?.let { detectAndCropFace(inputImage, it) }
-        return Pair(text, facePath)
+
+        return Triple(text, facePath, documentPath)
+    }
+
+    private suspend fun detectAndCropDocument(bitmap: Bitmap): Bitmap? {
+        try {
+            // Configure ML Kit Object Detector
+            val options = ObjectDetectorOptions.Builder()
+                .setDetectorMode(ObjectDetectorOptions.SINGLE_IMAGE_MODE)
+                .enableMultipleObjects()
+                .build()
+            val objectDetector = ObjectDetection.getClient(options)
+
+            // Create InputImage from bitmap
+            val inputImage = InputImage.fromBitmap(bitmap, 0)
+
+            // Detect objects
+            val detectedObjects = objectDetector.process(inputImage).await()
+
+            // Find the most likely document object (largest bounding box)
+            var largestObject: DetectedObject? = null
+            var maxArea = 0
+            for (obj in detectedObjects) {
+                val rect = obj.boundingBox
+                val area = rect.width() * rect.height()
+                // Filter for reasonable size (at least 30% of image dimensions) and passport-like aspect ratio
+                val aspectRatio = rect.width().toFloat() / rect.height()
+                if (area > maxArea && rect.width() > bitmap.width * 0.3 && rect.height() > bitmap.height * 0.3 &&
+                    aspectRatio in 1.2f..1.6f) { // Passport/citizen ID aspect ratio ~1.4
+                    maxArea = area
+                    largestObject = obj
+                }
+            }
+
+            // Crop the image if a valid object is found
+            largestObject?.let { obj ->
+                val rect = obj.boundingBox
+                // Ensure the bounding box is within the image bounds
+                val left = rect.left.coerceAtLeast(0)
+                val top = rect.top.coerceAtLeast(0)
+                val right = rect.right.coerceAtMost(bitmap.width)
+                val bottom = rect.bottom.coerceAtMost(bitmap.height)
+                if (right > left && bottom > top) {
+                    return Bitmap.createBitmap(bitmap, left, top, right - left, bottom - top)
+                }
+            }
+
+            Log.w("OcrRepositoryImpl", "No valid document object detected, returning original bitmap")
+            return bitmap
+        } catch (e: Exception) {
+            Log.e("OcrRepositoryImpl", "Error detecting and cropping document: ${e.message}")
+            return bitmap
+        }
     }
 
     private fun convertToArgb8888(bitmap: Bitmap): Bitmap {
-        // Kiểm tra nếu bitmap đã ở định dạng ARGB_8888
         if (bitmap.config == Bitmap.Config.ARGB_8888 && !bitmap.isHardwareAccelerated()) {
             return bitmap
         }
-
-        // Nếu bitmap ở định dạng HARDWARE, chuyển sang ARGB_8888
         val argbBitmap = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
         val canvas = android.graphics.Canvas(argbBitmap)
-
-        // Sao chép bitmap gốc sang bitmap mới
         try {
-            // Nếu bitmap là HARDWARE, cần chuyển sang phần mềm trước
             val softwareBitmap = if (bitmap.config == Bitmap.Config.HARDWARE) {
                 bitmap.copy(Bitmap.Config.ARGB_8888, true)
             } else {
@@ -101,7 +171,6 @@ class OcrRepositoryImpl(
         } catch (e: Exception) {
             Log.e("OcrRepositoryImpl", "Error converting bitmap to ARGB_8888: ${e.message}")
         }
-
         return argbBitmap
     }
 
@@ -115,11 +184,10 @@ class OcrRepositoryImpl(
         return if (faces.isNotEmpty()) {
             val faceBitmap = ocrDataSource.cropFaceBitmap(bitmap, faces[0])
             val file = File(context.cacheDir, "face_image_${System.currentTimeMillis()}.png")
-            faceBitmap.compress(Bitmap.CompressFormat.PNG, 100, java.io.FileOutputStream(file))
+            faceBitmap.compress(Bitmap.CompressFormat.PNG, 100, FileOutputStream(file))
             file.absolutePath
         } else null
     }
-
 
     override suspend fun parseDocument(rawText: String, documentType: String): DocumentData {
         val lines = rawText.split("\n").map {
@@ -213,7 +281,7 @@ class OcrRepositoryImpl(
             idCardNumber = idCardNumber,
             address = address,
             licenseClass = licenseClass,
-            placeOfOrigin = placeOfOrigin,
+            placeOfOrigin = placeOfOrigin
         )
     }
 
@@ -287,7 +355,6 @@ class OcrRepositoryImpl(
             cleanedLine = cleanedLine.replace(keyword, "", ignoreCase = true)
         }
         cleanedLine = cleanedLine.trim()
-
         val parts = cleanedLine.split(Regex("[:\\s]{2,}"))
         return if (parts.size >= 2) parts[1].trim() else null
     }

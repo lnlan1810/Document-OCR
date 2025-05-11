@@ -1,75 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
 
+    <!-- Các thành phần hiện có -->
     <ImageView
         android:id="@+id/faceImageView"
-        android:layout_width="200dp"
-        android:layout_height="230dp"
-        android:scaleType="fitCenter"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
         android:visibility="gone"
-        android:background="@android:drawable/picture_frame"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="16dp" />
+        android:contentDescription="Face Image" />
 
     <TextView
         android:id="@+id/resultText"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:padding="16dp"
-        android:textSize="16sp"
-        app:layout_constraintTop_toBottomOf="@id/faceImageView"
-        app:layout_constraintBottom_toTopOf="@id/translationLayout" />
-
-    <LinearLayout
-        android:id="@+id/translationLayout"
-        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:padding="16dp"
-        app:layout_constraintBottom_toTopOf="@id/buttonLayout">
+        android:text="Result text" />
 
-        <Spinner
-            android:id="@+id/languageSpinner"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp" />
-
-        <Button
-            android:id="@+id/translateButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Перевод" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/buttonLayout"
+    <Spinner
+        android:id="@+id/languageSpinner"
         android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <Button
+        android:id="@+id/translateButton"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:padding="16dp"
-        app:layout_constraintBottom_toBottomOf="parent">
+        android:text="Translate" />
 
-        <Button
-            android:id="@+id/copyButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Копировать текст"
-            android:layout_marginEnd="16dp" />
+    <Button
+        android:id="@+id/copyButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Copy Text" />
 
-        <Button
-            android:id="@+id/backButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Назад" />
+    <Button
+        android:id="@+id/backButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Back" />
 
-    </LinearLayout>
+    <!-- Nút mới để tạo PDF -->
+    <Button
+        android:id="@+id/btn_create_pdf"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Create PDF"
+        android:layout_gravity="center" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+</LinearLayout>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <!-- ImageView để hiển thị hình ảnh tài liệu -->
+    <ImageView
+        android:id="@+id/img_document"
+        android:layout_width="0dp"
+        android:layout_height="200dp"
+        android:scaleType="fitCenter"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- EditText để chỉnh sửa văn bản bản dịch -->
+    <EditText
+        android:id="@+id/et_translation"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:minHeight="100dp"
+        android:gravity="top"
+        android:inputType="textMultiLine"
+        app:layout_constraintTop_toBottomOf="@id/img_document"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp" />
+
+    <!-- Nút xem trước -->
+    <Button
+        android:id="@+id/btn_preview"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Xem trước"
+        app:layout_constraintTop_toBottomOf="@id/et_translation"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp" />
+
+    <!-- Nút tạo và xem PDF bản gốc -->
+    <Button
+        android:id="@+id/btn_generate_original_pdf"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Tạo và xem PDF bản gốc"
+        app:layout_constraintTop_toBottomOf="@id/btn_preview"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="8dp" />
+
+    <!-- Nút tạo và xem PDF bản dịch -->
+    <Button
+        android:id="@+id/btn_generate_translation_pdf"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Tạo và xem PDF bản dịch"
+        app:layout_constraintTop_toBottomOf="@id/btn_generate_original_pdf"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="8dp" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

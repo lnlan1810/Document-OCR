@@ -4,5 +4,8 @@
         <item>Hộ chiếu</item>
         <item>Giấy phép lái xe</item>
         <item>Căn cước công dân</item>
+
     </string-array>
+    <string name="ocr_download_channel_name">OCR Downloads</string>
+    <string name="ocr_download_channel_description">Notifications for downloaded PDF files</string>
 </resources>

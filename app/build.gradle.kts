@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.itis.ocrapp"
-        minSdk = 26
+        minSdk = 29
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -82,5 +82,10 @@ dependencies {
     implementation(libs.camerax.camera2)
     implementation(libs.glide)
     kapt(libs.glide.compiler)
+    implementation(libs.pdfcreatorandroid)
+  //  implementation(libs.notification)
+
+    // implementation(libs.android.pdf.viewer)
+   // implementation(libs.pdfviewer)
 
 }
