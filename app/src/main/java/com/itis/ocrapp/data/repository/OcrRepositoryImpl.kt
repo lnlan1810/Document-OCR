@@ -15,9 +15,13 @@ import com.itis.ocrapp.data.source.OcrDataSource
 import com.itis.ocrapp.domain.repository.OcrRepository
 import com.itis.ocrapp.utils.ImageProcessingUtils
 import com.itis.ocrapp.utils.ImageUtils
+import com.itis.ocrapp.utils.EncryptionUtils
 import kotlinx.coroutines.tasks.await
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.text.Normalizer
+import java.util.regex.Pattern
 
 class OcrRepositoryImpl(
     private val ocrDataSource: OcrDataSource,
@@ -26,37 +30,44 @@ class OcrRepositoryImpl(
 
     @OptIn(ExperimentalGetImage::class)
     override suspend fun recognizeTextFromCamera(imageProxy: androidx.camera.core.ImageProxy): Triple<String, String?, String?> {
-        // Get bitmap from imageProxy
         val inputImage = InputImage.fromMediaImage(imageProxy.image!!, imageProxy.imageInfo.rotationDegrees)
         var bitmap = ImageUtils.getBitmapFromInputImage(inputImage, context)
-
-        // Enhance image quality
         bitmap = bitmap?.let { convertToArgb8888(it) }?.let { ImageProcessingUtils.enhanceImageQuality(it) }
-
-        // Detect and crop document area (passport or citizen ID)
         val croppedBitmap = bitmap?.let { detectAndCropDocument(it) } ?: bitmap
 
-        // Save cropped document image
-        val documentFile = File(context.cacheDir, "document_image_${System.currentTimeMillis()}.png")
-        croppedBitmap?.compress(Bitmap.CompressFormat.PNG, 100, FileOutputStream(documentFile))
+        // Lưu tệp mã hóa cho tài liệu
+        val documentFile = File(context.cacheDir, "document_image_${System.currentTimeMillis()}.enc")
+        val tempDocumentFile = File(context.cacheDir, "temp_document_image.png")
+        croppedBitmap?.compress(Bitmap.CompressFormat.PNG, 100, FileOutputStream(tempDocumentFile))
+        EncryptionUtils.encryptFile(context, tempDocumentFile, documentFile)
+        tempDocumentFile.delete() // Xóa tệp tạm không mã hóa
         val documentPath = documentFile.absolutePath
 
-        // Create InputImage from cropped bitmap for text recognition
-        val enhancedInputImage = croppedBitmap?.let { InputImage.fromBitmap(it, imageProxy.imageInfo.rotationDegrees) }
-            ?: inputImage
-
-        // Recognize text
+        val enhancedInputImage = croppedBitmap?.let { InputImage.fromBitmap(it, imageProxy.imageInfo.rotationDegrees) } ?: inputImage
         val text = ocrDataSource.recognizeText(enhancedInputImage)
 
-        // Detect and crop face (unchanged)
-        val facePath = bitmap?.let { detectAndCropFace(inputImage, it) }
+        // Xử lý và mã hóa tệp khuôn mặt
+        val facePath = bitmap?.let {
+            val faceFilePath = detectAndCropFace(inputImage, it)
+            faceFilePath?.let { path ->
+                val faceFile = File(path)
+                val encFaceFile = File(context.cacheDir, "face_image_${System.currentTimeMillis()}.enc")
+                val tempFaceFile = File(context.cacheDir, "temp_face_image.png")
+                FileInputStream(faceFile).use { input ->
+                    FileOutputStream(tempFaceFile).use { output -> input.copyTo(output) }
+                }
+                EncryptionUtils.encryptFile(context, tempFaceFile, encFaceFile)
+                tempFaceFile.delete()
+                faceFile.delete()
+                encFaceFile.absolutePath
+            }
+        }
 
         imageProxy.close()
         return Triple(text, facePath, documentPath)
     }
 
     override suspend fun recognizeTextFromGallery(uri: Uri): Triple<String, String?, String?> {
-        // Create InputImage from URI
         val inputImage = try {
             InputImage.fromFilePath(context, uri)
         } catch (e: Exception) {
@@ -64,30 +75,25 @@ class OcrRepositoryImpl(
             return Triple("", null, null)
         }
 
-        // Get bitmap from URI and convert to ARGB_8888
         var bitmap = ImageUtils.getBitmapFromUri(uri, context)?.let { convertToArgb8888(it) }
-
-        // Detect and crop document area (passport or citizen ID)
         val croppedBitmap = bitmap?.let { detectAndCropDocument(it) } ?: bitmap
 
-        // Save cropped document image
-        val documentFile = File(context.cacheDir, "document_image_${System.currentTimeMillis()}.png")
-        croppedBitmap?.compress(Bitmap.CompressFormat.PNG, 100, FileOutputStream(documentFile))
+        // Lưu tệp mã hóa cho tài liệu
+        val documentFile = File(context.cacheDir, "document_image_${System.currentTimeMillis()}.enc")
+        val tempDocumentFile = File(context.cacheDir, "temp_document_image.png")
+        croppedBitmap?.compress(Bitmap.CompressFormat.PNG, 100, FileOutputStream(tempDocumentFile))
+        EncryptionUtils.encryptFile(context, tempDocumentFile, documentFile)
+        tempDocumentFile.delete()
         val documentPath = documentFile.absolutePath
 
-        // Enhance image quality for text recognition
         bitmap = try {
             croppedBitmap?.let { ImageProcessingUtils.enhanceImageQuality(it) }
         } catch (e: Exception) {
             Log.e("OcrRepositoryImpl", "Error enhancing image quality: ${e.message}")
-            croppedBitmap // Use cropped bitmap if enhancement fails
+            croppedBitmap
         }
 
-        // Create InputImage from cropped bitmap for text recognition
-        val enhancedInputImage = bitmap?.let { InputImage.fromBitmap(it, inputImage.rotationDegrees) }
-            ?: inputImage
-
-        // Recognize text
+        val enhancedInputImage = bitmap?.let { InputImage.fromBitmap(it, inputImage.rotationDegrees) } ?: inputImage
         val text = try {
             ocrDataSource.recognizeText(enhancedInputImage)
         } catch (e: Exception) {
@@ -95,46 +101,51 @@ class OcrRepositoryImpl(
             ""
         }
 
-        // Detect and crop face (unchanged)
-        val facePath = bitmap?.let { detectAndCropFace(inputImage, it) }
+        // Xử lý và mã hóa tệp khuôn mặt
+        val facePath = bitmap?.let {
+            val faceFilePath = detectAndCropFace(inputImage, it)
+            faceFilePath?.let { path ->
+                val faceFile = File(path)
+                val encFaceFile = File(context.cacheDir, "face_image_${System.currentTimeMillis()}.enc")
+                val tempFaceFile = File(context.cacheDir, "temp_face_image.png")
+                FileInputStream(faceFile).use { input ->
+                    FileOutputStream(tempFaceFile).use { output -> input.copyTo(output) }
+                }
+                EncryptionUtils.encryptFile(context, tempFaceFile, encFaceFile)
+                tempFaceFile.delete()
+                faceFile.delete()
+                encFaceFile.absolutePath
+            }
+        }
 
         return Triple(text, facePath, documentPath)
     }
 
     private suspend fun detectAndCropDocument(bitmap: Bitmap): Bitmap? {
         try {
-            // Configure ML Kit Object Detector
             val options = ObjectDetectorOptions.Builder()
                 .setDetectorMode(ObjectDetectorOptions.SINGLE_IMAGE_MODE)
                 .enableMultipleObjects()
                 .build()
             val objectDetector = ObjectDetection.getClient(options)
-
-            // Create InputImage from bitmap
             val inputImage = InputImage.fromBitmap(bitmap, 0)
-
-            // Detect objects
             val detectedObjects = objectDetector.process(inputImage).await()
 
-            // Find the most likely document object (largest bounding box)
             var largestObject: DetectedObject? = null
             var maxArea = 0
             for (obj in detectedObjects) {
                 val rect = obj.boundingBox
                 val area = rect.width() * rect.height()
-                // Filter for reasonable size (at least 30% of image dimensions) and passport-like aspect ratio
                 val aspectRatio = rect.width().toFloat() / rect.height()
                 if (area > maxArea && rect.width() > bitmap.width * 0.3 && rect.height() > bitmap.height * 0.3 &&
-                    aspectRatio in 1.2f..1.6f) { // Passport/citizen ID aspect ratio ~1.4
+                    aspectRatio in 1.2f..1.6f) {
                     maxArea = area
                     largestObject = obj
                 }
             }
 
-            // Crop the image if a valid object is found
             largestObject?.let { obj ->
                 val rect = obj.boundingBox
-                // Ensure the bounding box is within the image bounds
                 val left = rect.left.coerceAtLeast(0)
                 val top = rect.top.coerceAtLeast(0)
                 val right = rect.right.coerceAtMost(bitmap.width)
@@ -196,7 +207,6 @@ class OcrRepositoryImpl(
                 .replace(":", "")
                 .replace("：", "")
         }.filter { it.isNotBlank() }
-
         return when (documentType) {
             "passport" -> parsePassport(lines)
             "citizen_id" -> parseCitizenId(lines)
@@ -374,8 +384,7 @@ class OcrRepositoryImpl(
     private fun extractDate(text: String): String? {
         val normalizedText = text.replace("o", "0", ignoreCase = true)
         val datePattern = Regex("\\b(\\d{1,2})[\\s/|.-]*(\\d{1,2})[\\s/|.-]*(\\d{4})\\b")
-        val match = datePattern.find(normalizedText)
-        return match?.let {
+        return datePattern.find(normalizedText)?.let {
             val day = it.groupValues[1].padStart(2, '0')
             val month = it.groupValues[2].padStart(2, '0')
             val year = it.groupValues[3]

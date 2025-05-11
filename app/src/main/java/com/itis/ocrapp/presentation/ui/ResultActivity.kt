@@ -14,10 +14,11 @@ import androidx.lifecycle.ViewModelProvider
 import com.itis.ocrapp.databinding.ActivityResultBinding
 import com.itis.ocrapp.presentation.viewmodel.ResultViewModel
 import com.itis.ocrapp.presentation.viewmodel.ResultViewModelFactory
+import com.itis.ocrapp.utils.EncryptionUtils
 import com.itis.ocrapp.utils.showToast
+import java.io.File
 
 class ResultActivity : AppCompatActivity() {
-
     private lateinit var binding: ActivityResultBinding
     private lateinit var viewModel: ResultViewModel
 
@@ -29,13 +30,17 @@ class ResultActivity : AppCompatActivity() {
         val factory = ResultViewModelFactory(applicationContext)
         viewModel = ViewModelProvider(this, factory)[ResultViewModel::class.java]
 
-        val rawText = intent.getStringExtra("SCANNED_TEXT") ?: "Không có dữ liệu"
+        val rawText = intent.getStringExtra("SCANNED_TEXT") ?: "Нет доступных данных"
         val documentType = intent.getStringExtra("DOCUMENT_TYPE") ?: "passport"
         viewModel.initialize(rawText, documentType)
 
-        val faceImagePath = intent.getStringExtra("FACE_IMAGE_PATH")
-        faceImagePath?.let {
-            val faceBitmap = BitmapFactory.decodeFile(it)
+        // Giải mã và hiển thị hình ảnh khuôn mặt
+        intent.getStringExtra("FACE_IMAGE_PATH")?.let {
+            val encFile = File(it)
+            val tempFile = File(cacheDir, "temp_face_image.png")
+            EncryptionUtils.decryptFile(this, encFile, tempFile)
+            val faceBitmap = BitmapFactory.decodeFile(tempFile.absolutePath)
+            tempFile.delete() // Xóa tệp tạm sau khi sử dụng
             if (faceBitmap != null) {
                 binding.faceImageView.setImageBitmap(faceBitmap)
                 binding.faceImageView.visibility = View.VISIBLE

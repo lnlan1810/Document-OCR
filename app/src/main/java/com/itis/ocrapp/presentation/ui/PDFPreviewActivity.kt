@@ -15,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.itis.ocrapp.databinding.ActivityPdfpreviewBinding
+import com.itis.ocrapp.utils.EncryptionUtils
 import com.itis.ocrapp.utils.showToast
 import java.io.File
 import java.io.FileOutputStream
@@ -31,34 +32,33 @@ class PDFPreviewActivity : AppCompatActivity() {
         binding = ActivityPdfpreviewBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Lấy dữ liệu từ Intent
         documentImagePath = intent.getStringExtra("DOCUMENT_IMAGE_PATH")
         translationText = intent.getStringExtra("TRANSLATION_TEXT")
 
-        // Hiển thị hình ảnh tài liệu gốc
+        // Giải mã và hiển thị hình ảnh tài liệu
         documentImagePath?.let {
-            val file = File(it)
+            val encFile = File(it)
+            val tempFile = File(cacheDir, "temp_document_image.png")
+            EncryptionUtils.decryptFile(this, encFile, tempFile)
+            val file = File(tempFile.absolutePath)
             if (file.exists()) {
-                documentBitmap = BitmapFactory.decodeFile(it)
+                documentBitmap = BitmapFactory.decodeFile(tempFile.absolutePath)
+                tempFile.delete() // Xóa tệp tạm sau khi sử dụng
                 documentBitmap?.let { bitmap ->
                     binding.imgDocument.setImageBitmap(bitmap)
-                } ?: showToast("Không thể tải hình ảnh tài liệu")
+                } ?: showToast("Не удалось загрузить изображение документа\"")
             } else {
-                showToast("Không tìm thấy file hình ảnh tài liệu")
+                showToast("Файл изображения документа не найден")
             }
-        } ?: showToast("Không có hình ảnh tài liệu được cung cấp")
+        } ?: showToast("Изображение документа не предоставлено")
 
-        // Hiển thị văn bản bản dịch
         translationText?.let {
             binding.etTranslation.setText(it)
-        } ?: binding.etTranslation.setText("Không có văn bản bản dịch được cung cấp")
+        } ?: binding.etTranslation.setText("Переведённый текст не предоставлен")
 
-        // Xử lý nút xem trước
         binding.btnPreview.setOnClickListener {
             previewPDFLayout()
         }
-
-        // Xử lý nút tạo và xem PDF bản gốc
         binding.btnGenerateOriginalPdf.setOnClickListener {
             if (checkStoragePermission()) {
                 generateAndViewOriginalPDF()
@@ -66,8 +66,6 @@ class PDFPreviewActivity : AppCompatActivity() {
                 requestStoragePermission()
             }
         }
-
-        // Xử lý nút tạo và xem PDF bản dịch
         binding.btnGenerateTranslationPdf.setOnClickListener {
             if (checkStoragePermission()) {
                 generateAndViewTranslationPDF()
@@ -80,10 +78,10 @@ class PDFPreviewActivity : AppCompatActivity() {
     private fun previewPDFLayout() {
         translationText = binding.etTranslation.text.toString()
         if (translationText.isNullOrEmpty()) {
-            showToast("Văn bản bản dịch trống")
+            showToast("Переведённый текст пуст")
             return
         }
-        showToast("Đã cập nhật bản xem trước với văn bản đã chỉnh sửa: $translationText")
+        showToast("Предварительный просмотр обновлён с отредактированным текстом: $translationText")
     }
 
     private fun createOriginalPdf(originalImage: Bitmap, outputFile: File) {
@@ -147,7 +145,7 @@ class PDFPreviewActivity : AppCompatActivity() {
 
     private fun generateAndViewOriginalPDF() {
         if (documentBitmap == null) {
-            showToast("Thiếu hình ảnh tài liệu")
+            showToast("Отсутствует изображение документа")
             return
         }
         try {
@@ -160,14 +158,14 @@ class PDFPreviewActivity : AppCompatActivity() {
             }
             startActivity(intent)
         } catch (e: Exception) {
-            showToast("Lỗi khi tạo PDF bản gốc: ${e.message}")
+            showToast("Ошибка при создании оригинального PDF: ${e.message}")
             e.printStackTrace()
         }
     }
 
     private fun generateAndViewTranslationPDF() {
         if (binding.etTranslation.text.isEmpty()) {
-            showToast("Thiếu văn bản bản dịch")
+            showToast("Отсутствует переведённый текст")
             return
         }
         try {
@@ -180,7 +178,7 @@ class PDFPreviewActivity : AppCompatActivity() {
             }
             startActivity(intent)
         } catch (e: Exception) {
-            showToast("Lỗi khi tạo PDF bản dịch: ${e.message}")
+            showToast("Ошибка при создании переведённого PDF: ${e.message}")
             e.printStackTrace()
         }
     }
@@ -206,9 +204,9 @@ class PDFPreviewActivity : AppCompatActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == STORAGE_PERMISSION_CODE && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            showToast("Quyền truy cập bộ nhớ được cấp, vui lòng thử lại")
+            showToast("Доступ к хранилищу разрешён, пожалуйста, попробуйте снова")
         } else {
-            showToast("Quyền truy cập bộ nhớ bị từ chối")
+            showToast("Доступ к хранилищу отклонён")
         }
     }
 }
