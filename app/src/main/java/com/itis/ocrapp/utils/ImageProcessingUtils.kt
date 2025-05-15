@@ -1,6 +1,7 @@
 package com.itis.ocrapp.utils
 
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.util.Log
 import org.opencv.android.OpenCVLoader
 import org.opencv.android.Utils
@@ -122,5 +123,25 @@ object ImageProcessingUtils {
         // Áp dụng công thức: new_pixel = alpha * pixel + beta
         Core.convertScaleAbs(mat, adjustedMat, alpha, beta)
         return adjustedMat
+    }
+
+    fun convertToGrayscale(bitmap: Bitmap): Bitmap {
+        val width = bitmap.width
+        val height = bitmap.height
+        val grayscaleBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+
+        for (x in 0 until width) {
+            for (y in 0 until height) {
+                val pixel = bitmap.getPixel(x, y)
+                // Tính giá trị xám: 0.299R + 0.587G + 0.114B
+                val r = Color.red(pixel)
+                val g = Color.green(pixel)
+                val b = Color.blue(pixel)
+                val gray = (0.299 * r + 0.587 * g + 0.114 * b).toInt()
+                grayscaleBitmap.setPixel(x, y, Color.rgb(gray, gray, gray))
+            }
+        }
+
+        return grayscaleBitmap
     }
 }
