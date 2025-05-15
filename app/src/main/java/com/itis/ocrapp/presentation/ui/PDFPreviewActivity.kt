@@ -14,9 +14,14 @@ import android.os.Environment
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.itis.ocrapp.databinding.ActivityPdfpreviewBinding
 import com.itis.ocrapp.utils.EncryptionUtils
 import com.itis.ocrapp.utils.showToast
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 
@@ -35,30 +40,42 @@ class PDFPreviewActivity : AppCompatActivity() {
         documentImagePath = intent.getStringExtra("DOCUMENT_IMAGE_PATH")
         translationText = intent.getStringExtra("TRANSLATION_TEXT")
 
-        // Giải mã và hiển thị hình ảnh tài liệu
-        documentImagePath?.let {
-            val encFile = File(it)
-            val tempFile = File(cacheDir, "temp_document_image.png")
-            EncryptionUtils.decryptFile(this, encFile, tempFile)
-            val file = File(tempFile.absolutePath)
-            if (file.exists()) {
-                documentBitmap = BitmapFactory.decodeFile(tempFile.absolutePath)
-                tempFile.delete() // Xóa tệp tạm sau khi sử dụng
-                documentBitmap?.let { bitmap ->
-                    binding.imgDocument.setImageBitmap(bitmap)
-                } ?: showToast("Не удалось загрузить изображение документа\"")
-            } else {
-                showToast("Файл изображения документа не найден")
+        // Song song hóa giải mã hình ảnh và hiển thị văn bản
+        lifecycleScope.launch {
+            val imageLoadingDeferred = async(Dispatchers.IO) {
+                documentImagePath?.let {
+                    try {
+                        val encFile = File(it)
+                        val tempFile = File(cacheDir, "temp_document_image.png")
+                        EncryptionUtils.decryptFile(this@PDFPreviewActivity, encFile, tempFile)
+                        val bitmap = BitmapFactory.decodeFile(tempFile.absolutePath)
+                        tempFile.delete()
+                        // Chia tỷ lệ để phù hợp với A4 ở 150 DPI, giữ chất lượng
+                        bitmap?.let { scaleBitmap(it, 1240, 1754) }
+                    } catch (e: Exception) {
+                        runOnUiThread { showToast("Không thể tải hình ảnh tài liệu") }
+                        null
+                    }
+                }
             }
-        } ?: showToast("Изображение документа не предоставлено")
 
-        translationText?.let {
-            binding.etTranslation.setText(it)
-        } ?: binding.etTranslation.setText("Переведённый текст не предоставлен")
+            val textLoadingDeferred = async(Dispatchers.Main) {
+                translationText?.let {
+                    binding.etTranslation.setText(it)
+                } ?: binding.etTranslation.setText("Không có văn bản dịch")
+            }
 
-        binding.btnPreview.setOnClickListener {
-            previewPDFLayout()
+            // Chờ cả hai tác vụ hoàn thành
+            documentBitmap = imageLoadingDeferred.await()
+            textLoadingDeferred.await()
+
+            // Hiển thị hình ảnh nếu có
+            documentBitmap?.let { bitmap ->
+                binding.imgDocument.setImageBitmap(bitmap)
+            } ?: showToast("Không có hình ảnh tài liệu")
         }
+
+
         binding.btnGenerateOriginalPdf.setOnClickListener {
             if (checkStoragePermission()) {
                 generateAndViewOriginalPDF()
@@ -75,58 +92,94 @@ class PDFPreviewActivity : AppCompatActivity() {
         }
     }
 
-    private fun previewPDFLayout() {
-        translationText = binding.etTranslation.text.toString()
-        if (translationText.isNullOrEmpty()) {
-            showToast("Переведённый текст пуст")
-            return
-        }
-        showToast("Предварительный просмотр обновлён с отредактированным текстом: $translationText")
-    }
 
-    private fun createOriginalPdf(originalImage: Bitmap, outputFile: File) {
+    private suspend fun createOriginalPdf(originalImage: Bitmap, outputFile: File) = withContext(Dispatchers.IO) {
         val document = PdfDocument()
-        val pageWidth = 595
-        val pageHeight = 842
-        val scaledBitmap = scaleBitmap(originalImage, pageWidth, pageHeight)
+        val pageWidth = 1240 // A4 ở 150 DPI
+        val pageHeight = 1754
         val pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, 1).create()
         val page = document.startPage(pageInfo)
         val canvas = page.canvas
-        canvas.drawBitmap(scaledBitmap, 0f, 0f, null)
+        // Căn chỉnh bitmap để lấp đầy trang, giữ tỷ lệ
+        val bitmapAspect = originalImage.width.toFloat() / originalImage.height
+        val pageAspect = pageWidth.toFloat() / pageHeight
+        val scale: Float
+        val dx: Float
+        val dy: Float
+        if (bitmapAspect > pageAspect) {
+            scale = pageWidth.toFloat() / originalImage.width
+            dx = 0f
+            dy = (pageHeight - originalImage.height * scale) / 2
+        } else {
+            scale = pageHeight.toFloat() / originalImage.height
+            dx = (pageWidth - originalImage.width * scale) / 2
+            dy = 0f
+        }
+        canvas.translate(dx, dy)
+        canvas.scale(scale, scale)
+        canvas.drawBitmap(originalImage, 0f, 0f, Paint().apply { isAntiAlias = true })
         document.finishPage(page)
         document.writeTo(FileOutputStream(outputFile))
         document.close()
-        scaledBitmap.recycle()
     }
 
-    private fun createTranslationPdf(translationText: String, outputFile: File) {
+    private suspend fun createTranslationPdf(translationText: String, outputFile: File) = withContext(Dispatchers.IO) {
         val document = PdfDocument()
-        val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
-        val page = document.startPage(pageInfo)
-        val canvas = page.canvas
+        val pageWidth = 1240 // A4 ở 150 DPI
+        val pageHeight = 1754
+        val margin = 50f
+        val lineSpacing = 25f
+        var y = 50f
         val paint = Paint().apply {
             color = Color.BLACK
-            textSize = 24f
+            textSize = 20f
+            isAntiAlias = true
         }
-        val lines = translationText.split("\n")
-        var y = 50f
-        val margin = 50f
-        val lineSpacing = 30f
-        for (line in lines) {
-            if (y + lineSpacing > pageInfo.pageHeight - margin) {
-                document.finishPage(page)
-                val newPage = document.startPage(pageInfo)
-                y = 50f
-                newPage.canvas.drawText(line, margin, y, paint)
-                y += lineSpacing
-            } else {
+
+        var currentPage = document.startPage(PdfDocument.PageInfo.Builder(pageWidth, pageHeight, 1).create())
+        var canvas = currentPage.canvas
+        var pageNumber = 1
+
+        // Tách văn bản thành các đoạn dựa trên ký tự xuống dòng
+        val paragraphs = translationText.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
+        for (paragraph in paragraphs) {
+            // Tách đoạn thành các dòng phù hợp với chiều rộng trang
+            val lines = splitTextToFit(paragraph, paint, pageWidth - 2 * margin)
+            for (line in lines) {
+                if (y + lineSpacing > pageHeight - margin) {
+                    document.finishPage(currentPage)
+                    pageNumber++
+                    currentPage = document.startPage(PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNumber).create())
+                    canvas = currentPage.canvas
+                    y = 50f
+                }
                 canvas.drawText(line, margin, y, paint)
                 y += lineSpacing
             }
+            // Thêm khoảng cách giữa các đoạn
+            y += lineSpacing * 0.5f
         }
-        document.finishPage(page)
+
+        document.finishPage(currentPage)
         document.writeTo(FileOutputStream(outputFile))
         document.close()
+    }
+
+    private fun splitTextToFit(text: String, paint: Paint, maxWidth: Float): List<String> {
+        val lines = mutableListOf<String>()
+        val words = text.split(" ")
+        var currentLine = StringBuilder()
+        for (word in words) {
+            val testLine = if (currentLine.isEmpty()) word else "$currentLine $word"
+            if (paint.measureText(testLine) <= maxWidth) {
+                currentLine = StringBuilder(testLine)
+            } else {
+                if (currentLine.isNotEmpty()) lines.add(currentLine.toString())
+                currentLine = StringBuilder(word)
+            }
+        }
+        if (currentLine.isNotEmpty()) lines.add(currentLine.toString())
+        return lines
     }
 
     private fun scaleBitmap(bitmap: Bitmap, targetWidth: Int, targetHeight: Int): Bitmap {
@@ -145,41 +198,53 @@ class PDFPreviewActivity : AppCompatActivity() {
 
     private fun generateAndViewOriginalPDF() {
         if (documentBitmap == null) {
-            showToast("Отсутствует изображение документа")
+            showToast("Không có hình ảnh tài liệu")
             return
         }
-        try {
-            val pdfDir = File(getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "OCRApp_PDFs")
-            if (!pdfDir.exists()) pdfDir.mkdirs()
-            val originalPdfFile = File(pdfDir, "original_${System.currentTimeMillis()}.pdf")
-            createOriginalPdf(documentBitmap!!, originalPdfFile)
-            val intent = Intent(this, PDFViewerActivity::class.java).apply {
-                putExtra("PDF_FILE_PATH", originalPdfFile.absolutePath)
+        lifecycleScope.launch {
+            try {
+                val pdfDir = File(getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "OCRApp_PDFs")
+                if (!pdfDir.exists()) pdfDir.mkdirs()
+                val originalPdfFile = File(pdfDir, "original_${System.currentTimeMillis()}.pdf")
+                createOriginalPdf(documentBitmap!!, originalPdfFile)
+                withContext(Dispatchers.Main) {
+                    val intent = Intent(this@PDFPreviewActivity, PDFViewerActivity::class.java).apply {
+                        putExtra("PDF_FILE_PATH", originalPdfFile.absolutePath)
+                    }
+                    startActivity(intent)
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    showToast("Lỗi khi tạo PDF gốc: ${e.message}")
+                }
+                e.printStackTrace()
             }
-            startActivity(intent)
-        } catch (e: Exception) {
-            showToast("Ошибка при создании оригинального PDF: ${e.message}")
-            e.printStackTrace()
         }
     }
 
     private fun generateAndViewTranslationPDF() {
         if (binding.etTranslation.text.isEmpty()) {
-            showToast("Отсутствует переведённый текст")
+            showToast("Không có văn bản dịch")
             return
         }
-        try {
-            val pdfDir = File(getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "OCRApp_PDFs")
-            if (!pdfDir.exists()) pdfDir.mkdirs()
-            val translationPdfFile = File(pdfDir, "translation_${System.currentTimeMillis()}.pdf")
-            createTranslationPdf(binding.etTranslation.text.toString(), translationPdfFile)
-            val intent = Intent(this, PDFViewerActivity::class.java).apply {
-                putExtra("PDF_FILE_PATH", translationPdfFile.absolutePath)
+        lifecycleScope.launch {
+            try {
+                val pdfDir = File(getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "OCRApp_PDFs")
+                if (!pdfDir.exists()) pdfDir.mkdirs()
+                val translationPdfFile = File(pdfDir, "translation_${System.currentTimeMillis()}.pdf")
+                createTranslationPdf(binding.etTranslation.text.toString(), translationPdfFile)
+                withContext(Dispatchers.Main) {
+                    val intent = Intent(this@PDFPreviewActivity, PDFViewerActivity::class.java).apply {
+                        putExtra("PDF_FILE_PATH", translationPdfFile.absolutePath)
+                    }
+                    startActivity(intent)
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    showToast("Lỗi khi tạo PDF dịch: ${e.message}")
+                }
+                e.printStackTrace()
             }
-            startActivity(intent)
-        } catch (e: Exception) {
-            showToast("Ошибка при создании переведённого PDF: ${e.message}")
-            e.printStackTrace()
         }
     }
 
@@ -204,9 +269,9 @@ class PDFPreviewActivity : AppCompatActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == STORAGE_PERMISSION_CODE && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            showToast("Доступ к хранилищу разрешён, пожалуйста, попробуйте снова")
+            showToast("Đã cấp quyền truy cập bộ nhớ, vui lòng thử lại")
         } else {
-            showToast("Доступ к хранилищу отклонён")
+            showToast("Quyền truy cập bộ nhớ bị từ chối")
         }
     }
 }

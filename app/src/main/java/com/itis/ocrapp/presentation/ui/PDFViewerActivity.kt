@@ -76,8 +76,9 @@ class PDFViewerActivity : AppCompatActivity() {
             if (currentRenderer!!.pageCount > 0) {
                 val page = currentRenderer!!.openPage(0)
                 val displayMetrics = resources.displayMetrics
-                val maxWidth = displayMetrics.widthPixels
-                val maxHeight = (displayMetrics.heightPixels * 0.6).toInt()
+                // Giảm kích thước bitmap để tăng tốc render
+                val maxWidth = (displayMetrics.widthPixels * 0.8).toInt()
+                val maxHeight = (displayMetrics.heightPixels * 0.5).toInt()
                 val scale = Math.min(maxWidth.toFloat() / page.width, maxHeight.toFloat() / page.height)
                 val bitmapWidth = (page.width * scale).toInt()
                 val bitmapHeight = (page.height * scale).toInt()
