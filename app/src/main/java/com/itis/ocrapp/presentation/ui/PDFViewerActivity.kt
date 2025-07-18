@@ -76,7 +76,6 @@ class PDFViewerActivity : AppCompatActivity() {
             if (currentRenderer!!.pageCount > 0) {
                 val page = currentRenderer!!.openPage(0)
                 val displayMetrics = resources.displayMetrics
-                // Giảm kích thước bitmap để tăng tốc render
                 val maxWidth = (displayMetrics.widthPixels * 0.8).toInt()
                 val maxHeight = (displayMetrics.heightPixels * 0.5).toInt()
                 val scale = Math.min(maxWidth.toFloat() / page.width, maxHeight.toFloat() / page.height)
@@ -125,7 +124,7 @@ class PDFViewerActivity : AppCompatActivity() {
                             ) == PackageManager.PERMISSION_GRANTED
                         ) {
                             showDownloadNotification(sourceFile.name, uri)
-                            showToast("PDF загружен в папку «Загрузки»: ${sourceFile.name}")
+                            showToast("PDF downloaded to your Downloads folder: ${sourceFile.name}")
                         } else {
                             ActivityCompat.requestPermissions(
                                 this,
@@ -135,7 +134,7 @@ class PDFViewerActivity : AppCompatActivity() {
                         }
                     } else {
                         showDownloadNotification(sourceFile.name, uri)
-                        showToast("PDF загружен в папку «Загрузки»: ${sourceFile.name}")
+                        showToast("PDF downloaded to your Downloads folder: ${sourceFile.name}")
                     }
                 } ?: showToast("Ошибка сохранения PDF")
             } catch (e: Exception) {
@@ -165,8 +164,8 @@ class PDFViewerActivity : AppCompatActivity() {
         )
         val notification = NotificationCompat.Builder(this, "ocr_download_channel")
             .setSmallIcon(android.R.drawable.ic_menu_save)
-            .setContentTitle("PDF-файл загружен")
-            .setContentText("File $fileName сохранён в разделе «Загрузки». Нажмите, чтобы открыть.")
+            .setContentTitle("PDF file uploaded")
+            .setContentText("File $fileName saved in your Downloads section. Click to open.")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
@@ -192,7 +191,7 @@ class PDFViewerActivity : AppCompatActivity() {
                 pendingFileName?.let { name ->
                     pendingFileUri?.let { uri ->
                         showDownloadNotification(name, uri)
-                        showToast("PDF загружен: $name")
+                        showToast("PDF uploaded: $name")
                     }
                 }
             } else {

@@ -3,6 +3,7 @@ package com.itis.ocrapp.utils
 import android.content.Context
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKeys
+import androidx.security.crypto.MasterKey
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -17,20 +18,21 @@ object EncryptionUtils {
     private const val TRANSFORMATION = "AES/ECB/PKCS5Padding"
     private const val KEY_SIZE = 256
 
-    // Lấy EncryptedSharedPreferences
     private fun getEncryptedSharedPreferences(context: Context): SharedPreferences {
         val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
+       // val masterKey = MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build()
         return EncryptedSharedPreferences.create(
+          //  context,
             "secure_app_prefs",
             masterKeyAlias,
+         //   masterKey,
             context,
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
     }
 
-    // Tạo và lưu khóa bí mật
-    fun generateAndStoreKey(context: Context): ByteArray {
+    private fun generateAndStoreKey(context: Context): ByteArray {
         val keyGenerator = KeyGenerator.getInstance(ALGORITHM)
         keyGenerator.init(KEY_SIZE)
         val secretKey = keyGenerator.generateKey()
@@ -42,8 +44,7 @@ object EncryptionUtils {
         return keyBytes
     }
 
-    // Lấy khóa bí mật
-    fun getStoredKey(context: Context): ByteArray {
+    private fun getStoredKey(context: Context): ByteArray {
         val keyString = getEncryptedSharedPreferences(context)
             .getString("encryption_key", null)
         return if (keyString != null) {
@@ -53,7 +54,6 @@ object EncryptionUtils {
         }
     }
 
-    // Mã hóa tệp
     fun encryptFile(context: Context, inputFile: File, outputFile: File) {
         val key = SecretKeySpec(getStoredKey(context), ALGORITHM)
         val cipher = Cipher.getInstance(TRANSFORMATION)
@@ -76,7 +76,6 @@ object EncryptionUtils {
         }
     }
 
-    // Giải mã tệp
     fun decryptFile(context: Context, inputFile: File, outputFile: File) {
         val key = SecretKeySpec(getStoredKey(context), ALGORITHM)
         val cipher = Cipher.getInstance(TRANSFORMATION)

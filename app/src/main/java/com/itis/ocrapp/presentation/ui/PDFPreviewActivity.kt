@@ -40,7 +40,6 @@ class PDFPreviewActivity : AppCompatActivity() {
         documentImagePath = intent.getStringExtra("DOCUMENT_IMAGE_PATH")
         translationText = intent.getStringExtra("TRANSLATION_TEXT")
 
-        // Song song hóa giải mã hình ảnh và hiển thị văn bản
         lifecycleScope.launch {
             val imageLoadingDeferred = async(Dispatchers.IO) {
                 documentImagePath?.let {
@@ -50,7 +49,6 @@ class PDFPreviewActivity : AppCompatActivity() {
                         EncryptionUtils.decryptFile(this@PDFPreviewActivity, encFile, tempFile)
                         val bitmap = BitmapFactory.decodeFile(tempFile.absolutePath)
                         tempFile.delete()
-                        // Chia tỷ lệ để phù hợp với A4 ở 150 DPI, giữ chất lượng
                         bitmap?.let { scaleBitmap(it, 1240, 1754) }
                     } catch (e: Exception) {
                         runOnUiThread { showToast("Không thể tải hình ảnh tài liệu") }
@@ -65,11 +63,9 @@ class PDFPreviewActivity : AppCompatActivity() {
                 } ?: binding.etTranslation.setText("Không có văn bản dịch")
             }
 
-            // Chờ cả hai tác vụ hoàn thành
             documentBitmap = imageLoadingDeferred.await()
             textLoadingDeferred.await()
 
-            // Hiển thị hình ảnh nếu có
             documentBitmap?.let { bitmap ->
                 binding.imgDocument.setImageBitmap(bitmap)
             } ?: showToast("Không có hình ảnh tài liệu")
@@ -269,9 +265,9 @@ class PDFPreviewActivity : AppCompatActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == STORAGE_PERMISSION_CODE && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            showToast("Đã cấp quyền truy cập bộ nhớ, vui lòng thử lại")
+            showToast("Storage access permission granted, please try again")
         } else {
-            showToast("Quyền truy cập bộ nhớ bị từ chối")
+            showToast("Storage access permission denied")
         }
     }
 }

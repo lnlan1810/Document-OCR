@@ -37,14 +37,11 @@ class ResultActivity : AppCompatActivity() {
         val documentType = intent.getStringExtra("DOCUMENT_TYPE") ?: "passport"
         val faceImagePath = intent.getStringExtra("FACE_IMAGE_PATH")
 
-        // Khởi tạo ViewModel và chạy song song hai tác vụ
         lifecycleScope.launch {
-            // Tác vụ 1: Khởi tạo ViewModel và hiển thị văn bản kết quả
             val textProcessingDeferred = async {
                 viewModel.initialize(rawText, documentType)
             }
 
-            // Tác vụ 2: Giải mã và hiển thị hình ảnh khuôn mặt
             val faceProcessingDeferred = async {
                 faceImagePath?.let {
                     try {
@@ -52,7 +49,7 @@ class ResultActivity : AppCompatActivity() {
                         val tempFile = File(cacheDir, "temp_face_image.png")
                         EncryptionUtils.decryptFile(this@ResultActivity, encFile, tempFile)
                         val faceBitmap = BitmapFactory.decodeFile(tempFile.absolutePath)
-                        tempFile.delete() // Xóa tệp tạm sau khi sử dụng
+                        tempFile.delete()
                         faceBitmap
                     } catch (e: Exception) {
                         runOnUiThread { showToast("Ошибка загрузки изображения лица: ${e.message}") }
@@ -61,11 +58,9 @@ class ResultActivity : AppCompatActivity() {
                 }
             }
 
-            // Chờ cả hai tác vụ hoàn thành
             textProcessingDeferred.await()
             val faceBitmap = faceProcessingDeferred.await()
 
-            // Hiển thị hình ảnh khuôn mặt nếu có
             faceBitmap?.let {
                 runOnUiThread {
                     binding.faceImageView.setImageBitmap(it)
@@ -94,7 +89,7 @@ class ResultActivity : AppCompatActivity() {
         }
         binding.copyButton.setOnClickListener {
             copyToClipboard(binding.resultText.text.toString())
-            showToast("Текст скопирован")
+            showToast("Text copied")
         }
         binding.backButton.setOnClickListener {
             finish()
@@ -109,7 +104,7 @@ class ResultActivity : AppCompatActivity() {
     }
 
     private fun setupLanguageSpinner() {
-        val languages = arrayOf("Вьетнамский", "Английский", "Русский")
+        val languages = arrayOf("Vietnamese", "English", "Russian")
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, languages)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.languageSpinner.adapter = adapter

@@ -44,7 +44,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupDocumentTypeSpinner() {
-        val documentTypes = arrayOf("паспорт", "удостоверение личности гражданина")
+        val documentTypes = arrayOf("passport", "citizen identity card")
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, documentTypes)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.documentTypeSpinner.adapter = adapter
