@@ -15,7 +15,6 @@
         android:visibility="gone"
         android:contentDescription="Изображение лица"
         android:scaleType="centerCrop"
-        android:background="@drawable/rounded_image_background"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
@@ -40,7 +39,6 @@
             android:text="Результат"
             android:textSize="16sp"
             android:textColor="@color/text_primary"
-            android:background="@drawable/rounded_text_background"
             android:lineSpacingExtra="4dp" />
 
     </ScrollView>
@@ -51,7 +49,6 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:background="@drawable/spinner_background"
         app:layout_constraintBottom_toTopOf="@id/buttonContainer"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
@@ -69,34 +66,30 @@
 
         <Button
             android:id="@+id/translateButton"
-            style="@style/AppButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
-            android:text="Перевести" />
+            android:text="Translate" />
 
         <Button
             android:id="@+id/copyButton"
-            style="@style/AppButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
-            android:text="Копировать текст" />
+            android:text="Copy Text" />
 
         <Button
             android:id="@+id/btn_create_pdf"
-            style="@style/AppButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
-            android:text="Создать PDF" />
+            android:text="Create PDF" />
 
         <Button
             android:id="@+id/backButton"
-            style="@style/AppButtonSecondary"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Назад" />
+            android:text="Back" />
 
     </LinearLayout>
 

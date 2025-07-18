@@ -34,6 +34,48 @@ class ResultViewModel(
         "t" to "т", "u" to "у", "v" to "в", "x" to "кс", "y" to "и"
     )
 
+    private val fieldTranslations = mapOf(
+        "vi" to mapOf(
+            "Tên đầy đủ" to "Tên đầy đủ",
+            "Ngày sinh" to "Ngày sinh",
+            "Giới tính" to "Giới tính",
+            "Ngày cấp" to "Ngày cấp",
+            "Có giá trị đến" to "Có giá trị đến",
+            "Số tài liệu" to "Số tài liệu",
+            "Nơi sinh" to "Nơi sinh",
+            "Số CMND" to "Số CMND",
+            "Địa chỉ" to "Địa chỉ",
+            "Hạng" to "Hạng",
+            "Quê quán" to "Quê quán"
+        ),
+        TranslateLanguage.ENGLISH to mapOf(
+            "Tên đầy đủ" to "Full Name",
+            "Ngày sinh" to "Date of Birth",
+            "Giới tính" to "Sex",
+            "Ngày cấp" to "Date of Issue",
+            "Có giá trị đến" to "Date of Expiry",
+            "Số tài liệu" to "Document Number",
+            "Nơi sinh" to "Place of Birth",
+            "Số CMND" to "ID Card Number",
+            "Địa chỉ" to "Address",
+            "Hạng" to "License Class",
+            "Quê quán" to "Place of Origin"
+        ),
+        TranslateLanguage.RUSSIAN to mapOf(
+            "Tên đầy đủ" to "Полное имя",
+            "Ngày sinh" to "Дата рождения",
+            "Giới tính" to "Пол",
+            "Ngày cấp" to "Дата выдачи",
+            "Có giá trị đến" to "Дата истечения срока",
+            "Số tài liệu" to "Номер документа",
+            "Nơi sinh" to "Место рождения",
+            "Số CMND" to "Номер удостоверения личности",
+            "Địa chỉ" to "Адрес",
+            "Hạng" to "Класс лицензии",
+            "Quê quán" to "Место происхождения"
+        )
+    )
+
     fun initialize(rawText: String, documentType: String) {
         this.documentType = documentType
         viewModelScope.launch {
@@ -67,7 +109,7 @@ class ResultViewModel(
 
         viewModelScope.launch {
             val translatedFields = mutableMapOf<String, String>()
-            val fieldsToTranslate = originalFields.entries.toList()
+            val fieldsToTranslate =originalFields.entries.toList()
             var completedTranslations = 0
 
             fieldsToTranslate.forEach { (key, value) ->
@@ -130,16 +172,7 @@ class ResultViewModel(
     private suspend fun displayFields(fields: Map<String, String>) {
         val result = StringBuilder()
         fields.forEach { (key, value) ->
-            val label = if (targetLanguage == "vi") {
-                key
-            } else {
-                try {
-                    translateTextUseCase.execute(key, targetLanguage)
-                } catch (e: Exception) {
-                    _toastMessage.value = "Lỗi dịch nhãn $key: ${e.message}"
-                    key
-                }
-            }
+            val label = fieldTranslations[targetLanguage]?.get(key) ?: key
             result.append("$label: $value\n")
         }
         _resultText.value = result.toString().trim()

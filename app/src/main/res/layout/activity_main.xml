@@ -25,7 +25,7 @@
         android:id="@+id/scanButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Сканирование документов"
+        android:text="Scan Document"
         app:layout_constraintBottom_toTopOf="@id/pickImageButton"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
@@ -34,7 +34,7 @@
         android:id="@+id/pickImageButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Выбрать фото"
+        android:text="Select from Photos"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
