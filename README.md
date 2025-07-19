@@ -1,17 +1,25 @@
 # Vietnam OCR App
 
 ## Description
-An Android app for Optical Character Recognition (OCR) to extract data from Vietnamese documents like passports. It uses CameraX for image capture, ML Kit for text and face recognition, and supports translation into Vietnamese, English, and Russian. Built with MVVM for maintainability.
+An Android app for Optical Character Recognition (OCR) on passports and citizen ID cards, supporting image capture, text extraction, face/document detection, translation, and PDF generation with encryption.
 
 ## Video Demo
-https://github.com/user-attachments/assets/67284707-3450-44f8-a79b-47adce01a4fd
+https://github.com/user-attachments/assets/b40b83c0-db43-4eba-a5cc-e61df6637cf5
 
-## Table of Contents
-- [Installation](#installation)
-- [Usage](#usage)
-- [Features](#features)
-- [Technologies](#technologies)
-- [Contributing](#contributing)
+## Features
+- Capture/select images via camera or gallery.
+- Extract text using Google ML Kit OCR.
+- Detect and crop documents/faces.
+- Parse document data (e.g., name, date of birth, ID number).
+- Translate text (Vietnamese, English, Russian).
+- Generate and download PDFs.
+- Encrypt images with AES-256.
+
+## Tech Stack
+Platform: Android
+Language: Kotlin
+Libraries: Google ML Kit (OCR, face detection, translation), CameraX, OpenCV, AndroidX Security
+Architecture: MVVM
 
 ## Installation
 1. Clone the repo:
@@ -22,23 +30,10 @@ https://github.com/user-attachments/assets/67284707-3450-44f8-a79b-47adce01a4fd
 3. Run on an Android device/emulator (API 26+).
 
 ## Usage
-1. Open the app and click "Scan" to capture/select an image.
-2. View extracted text and face (if detected) on the result screen.
-3. Select a language (Vietnamese, English, Russian) to translate text.
-4. Copy results to the clipboard.
-
-## Features
-- Capture images via CameraX or gallery.
-- Recognize text and faces using ML Kit.
-- Extract passport data (name, date of birth, etc.).
-- Translate text into multiple languages.
-- Clean, user-friendly UI.
-
-## Technologies
-- Kotlin
-- CameraX
-- Google ML Kit
-- LiveData & Coroutines
+1. Select document type (passport/citizen ID).
+2. Capture or pick image.
+3. View parsed data; translate if needed.
+4. Generate/download PDFs from results.
 
 ## Contributing
 1. Fork the repo.
