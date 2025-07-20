@@ -16,10 +16,10 @@ https://github.com/user-attachments/assets/b40b83c0-db43-4eba-a5cc-e61df6637cf5
 - Encrypt images with AES-256.
 
 ## Tech Stack
-Platform: Android
-Language: Kotlin
-Libraries: Google ML Kit (OCR, face detection, translation), CameraX, OpenCV, AndroidX Security
-Architecture: MVVM
+- Platform: Android
+- Language: Kotlin
+- Libraries: Google ML Kit (OCR, face detection, translation), CameraX, OpenCV, AndroidX Security
+- Architecture: MVVM
 
 ## Installation
 1. Clone the repo:
